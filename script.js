@@ -5,6 +5,56 @@ const navLinks = [...document.querySelectorAll('.nav a')];
 const sections = [...document.querySelectorAll('main section[id]')];
 const loader = document.querySelector('.loader');
 const loaderCount = document.querySelector('.loader-meta b');
+const originalText = new WeakMap();
+const originalPlaceholders = new WeakMap();
+let currentLanguage = 'en';
+
+function translateValue(value, language = currentLanguage) {
+  return language === 'zh' ? (window.siteTranslations.zh[value] || value) : value;
+}
+
+function applyLanguage(language, root = document.body) {
+  currentLanguage = language;
+  const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
+  const nodes = [];
+  while (walker.nextNode()) nodes.push(walker.currentNode);
+  nodes.forEach(node => {
+    if (node.parentElement?.closest('script, style, svg, .no-translate')) return;
+    if (!originalText.has(node)) originalText.set(node, node.nodeValue);
+    const original = originalText.get(node);
+    const clean = original.trim();
+    if (!clean) return;
+    node.nodeValue = original.replace(clean, translateValue(clean, language));
+  });
+  root.querySelectorAll?.('[placeholder]').forEach(field => {
+    if (!originalPlaceholders.has(field)) originalPlaceholders.set(field, field.placeholder);
+    const original = originalPlaceholders.get(field);
+    field.placeholder = language === 'zh' ? (window.siteTranslations.placeholders.zh[original] || original) : original;
+  });
+  document.documentElement.lang = language === 'zh' ? 'zh-CN' : 'en';
+  document.title = language === 'zh' ? 'INfinity Design Studio — 高端平面设计' : 'INfinity Design Studio — Premium Graphic Design';
+  if (root === document.body) document.querySelector('.hero h1').innerHTML = language === 'zh' ? '我们打造具有<br><em>长久影响力</em>的品牌。' : 'We create brands<br>with <em>lasting</em> impact.';
+  document.querySelectorAll('.language-switcher button').forEach(button => button.classList.toggle('active', button.dataset.lang === language));
+  renderSocialLinks();
+}
+
+function renderSocialLinks() {
+  const container = document.querySelector('#socialLinks');
+  if (!container) return;
+  container.innerHTML = window.socialLinks.map(link => `<a href="${link.url}" target="_blank" rel="noopener noreferrer" aria-label="${link.label}" title="${link.label}">${link.icon}<span>${currentLanguage === 'zh' ? link.zhLabel : link.label}</span></a>`).join('');
+}
+
+document.querySelectorAll('.language-switcher button').forEach(button => button.addEventListener('click', () => {
+  try { localStorage.setItem('infinity-language', button.dataset.lang); } catch (_) {}
+  applyLanguage(button.dataset.lang);
+  showTestimonial(testimonialIndex);
+  if (!serviceModal.hidden && modalTrigger) {
+    const slug = modalTrigger.closest('.service-card')?.dataset.service;
+    if (slug) openServiceModal(slug, modalTrigger);
+  }
+}));
+try { currentLanguage = localStorage.getItem('infinity-language') || 'en'; } catch (_) { currentLanguage = 'en'; }
+applyLanguage(currentLanguage);
 
 let progress = 0;
 const ticker = window.setInterval(() => {
@@ -67,10 +117,10 @@ const quoteButtons = [...quoteWrap.querySelectorAll('.quote-nav button')];
 function showTestimonial(index) {
   testimonialIndex = (index + testimonials.length) % testimonials.length;
   const item = testimonials[testimonialIndex];
-  quoteWrap.querySelector('blockquote').textContent = item.quote;
+  quoteWrap.querySelector('blockquote').textContent = translateValue(item.quote);
   quoteWrap.querySelector('.quote-author>span').textContent = item.initials;
   quoteWrap.querySelector('.quote-author b').textContent = item.name;
-  quoteWrap.querySelector('.quote-author small').textContent = item.role;
+  quoteWrap.querySelector('.quote-author small').textContent = translateValue(item.role);
   quoteWrap.querySelector('.quote-nav i').style.width = `${((testimonialIndex + 1) / testimonials.length) * 100}%`;
 }
 quoteButtons[0].addEventListener('click', () => showTestimonial(testimonialIndex - 1));
@@ -126,12 +176,12 @@ contactForm.addEventListener('submit', event => {
   });
   if (invalidFields.length) {
     status.className = 'form-status error';
-    status.textContent = invalidFields[0].type === 'email' ? 'Please enter a valid email address.' : 'Please complete all required fields.';
+    status.textContent = translateValue(invalidFields[0].type === 'email' ? 'Please enter a valid email address.' : 'Please complete all required fields.');
     invalidFields[0].focus();
     return;
   }
   status.className = 'form-status success';
-  status.textContent = 'Your details are ready. Connect Formspree or EmailJS to send this form.';
+  status.textContent = translateValue('Your details are ready. Connect Formspree or EmailJS to send this form.');
   event.currentTarget.reset();
 });
 
@@ -157,10 +207,12 @@ let modalTrigger = null;
 function openServiceModal(slug, trigger) {
   const content = serviceContent[slug];
   if (!content) return;
+  const localized = currentLanguage === 'zh' ? window.modalTranslations[slug] : null;
+  const sampleNames = localized?.samples || content.samples;
   modalTrigger = trigger;
-  modalTitle.textContent = content.title;
-  modalDescription.textContent = content.description;
-  modalGallery.innerHTML = content.samples.map((name, index) => `<figure><button class="modal-image-open" aria-label="Open ${name} preview"><img src="assets/images/portfolio/${content.folder}/project-${index + 1}.webp" data-board="assets/images/portfolio/${content.folder}/showcase-board.png" alt="${name}" loading="lazy"></button><figcaption>${String(index + 1).padStart(2, '0')} / ${name}</figcaption></figure>`).join('');
+  modalTitle.textContent = translateValue(content.title);
+  modalDescription.textContent = localized?.description || content.description;
+  modalGallery.innerHTML = sampleNames.map((name, index) => `<figure><button class="modal-image-open" aria-label="Open ${name} preview"><img src="assets/images/portfolio/${content.folder}/project-${index + 1}.webp" data-board="assets/images/portfolio/${content.folder}/showcase-board.png" alt="${name}" loading="lazy"></button><figcaption>${String(index + 1).padStart(2, '0')} / ${name}</figcaption></figure>`).join('');
   modalGallery.querySelectorAll('.modal-image-open').forEach(button => button.addEventListener('click', () => openImageLightbox(button.querySelector('img'), content.title, button.querySelector('img').alt, content.title)));
   serviceModal.hidden = false;
   document.body.style.overflow = 'hidden';
@@ -201,9 +253,9 @@ function openImageLightbox(image, title, description, category, trigger = null) 
   lightboxTrigger = trigger || image.closest('button');
   lightboxImage.src = image.src;
   lightboxImage.alt = image.alt;
-  lightboxTitle.textContent = title;
-  lightboxDescription.textContent = description;
-  lightboxCategory.textContent = category;
+  lightboxTitle.textContent = translateValue(title);
+  lightboxDescription.textContent = translateValue(description);
+  lightboxCategory.textContent = translateValue(category);
   lightbox.hidden = false;
   document.body.style.overflow = 'hidden';
   lightbox.querySelector('button').focus();
