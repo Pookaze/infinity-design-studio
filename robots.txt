@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://pookaze.github.io/infinity-design-studio/sitemap.xml

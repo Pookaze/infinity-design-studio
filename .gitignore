@@ -1,0 +1,14 @@
+# Operating system and editor files
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
+# Local development and temporary files
+*.log
+*.tmp
+tmp/
+node_modules/
+
+# Codex workspace metadata
+.agents/
