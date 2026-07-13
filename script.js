@@ -42,7 +42,11 @@ function applyLanguage(language, root = document.body) {
 function renderSocialLinks() {
   const container = document.querySelector('#socialLinks');
   if (!container) return;
-  container.innerHTML = window.socialLinks.map(link => `<a href="${link.url}" target="_blank" rel="noopener noreferrer" aria-label="${link.label}" title="${link.label}">${link.icon}<span>${currentLanguage === 'zh' ? link.zhLabel : link.label}</span></a>`).join('');
+  container.innerHTML = window.socialLinks.map(link => {
+    const unavailable = /yourusername|youruserid/i.test(link.url);
+    return `<a href="${unavailable ? '#' : link.url}"${unavailable ? ' aria-disabled="true"' : ' target="_blank" rel="noopener noreferrer"'} aria-label="${link.label}" title="${unavailable ? `${link.label} link coming soon` : link.label}">${link.icon}<span>${currentLanguage === 'zh' ? link.zhLabel : link.label}</span></a>`;
+  }).join('');
+  container.querySelectorAll('[aria-disabled="true"]').forEach(link => link.addEventListener('click', event => event.preventDefault()));
 }
 
 document.querySelectorAll('.language-switcher button').forEach(button => button.addEventListener('click', () => {
@@ -210,52 +214,5 @@ contactForm.addEventListener('submit', event => {
   status.className = 'form-status success';
   status.textContent = translateValue('Your details are ready. Connect Formspree or EmailJS to send this form.');
   event.currentTarget.reset();
-});
-
-const filterButtons = [...document.querySelectorAll('.work-filters button')];
-const portfolioCards = [...document.querySelectorAll('.work-card')];
-filterButtons.forEach(button => button.addEventListener('click', () => {
-  filterButtons.forEach(item => item.classList.toggle('active', item === button));
-  portfolioCards.forEach(card => {
-    const show = button.dataset.filter === 'all' || card.dataset.category === button.dataset.filter;
-    card.classList.toggle('filtered-out', !show);
-    card.setAttribute('aria-hidden', String(!show));
-  });
-}));
-
-const lightbox = document.querySelector('.image-lightbox');
-const lightboxImage = lightbox.querySelector('img');
-const lightboxTitle = lightbox.querySelector('.lightbox-info h2');
-const lightboxDescription = lightbox.querySelector('.lightbox-info p');
-const lightboxCategory = lightbox.querySelector('.lightbox-info small');
-let lightboxTrigger = null;
-function openImageLightbox(image, title, description, category, trigger = null) {
-  lightboxTrigger = trigger || image.closest('button');
-  lightboxImage.src = image.src;
-  lightboxImage.alt = image.alt;
-  lightboxTitle.textContent = translateValue(title);
-  lightboxDescription.textContent = translateValue(description);
-  lightboxCategory.textContent = translateValue(category);
-  lightbox.hidden = false;
-  document.body.style.overflow = 'hidden';
-  lightbox.querySelector('button').focus();
-}
-function closeLightbox() {
-  lightbox.hidden = true;
-  lightboxImage.src = '';
-  document.body.style.overflow = '';
-  if (lightboxTrigger) lightboxTrigger.focus();
-}
-document.querySelectorAll('.lightbox-open').forEach(button => button.addEventListener('click', () => {
-  const image = button.querySelector('img');
-  const card = button.closest('.work-card');
-  openImageLightbox(image, card.querySelector('h3').textContent, card.querySelector('p').textContent, card.dataset.category.replace('-', ' '), button);
-}));
-lightbox.querySelector('button').addEventListener('click', closeLightbox);
-lightbox.addEventListener('click', event => { if (event.target === lightbox) closeLightbox(); });
-
-document.addEventListener('keydown', event => {
-  if (event.key !== 'Escape') return;
-  if (!lightbox.hidden) closeLightbox();
 });
 

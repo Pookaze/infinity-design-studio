@@ -1,89 +1,98 @@
-const projectId = Number(document.body.dataset.projectId);
-const project = window.projectData.find(item => item.id === projectId) || window.projectData[0];
-const labels = {
-  en:{home:'Home',about:'About',work:'Work',contact:'Contact',start:'Start a project',archive:'Project Archive',client:'Client',services:'Services provided',category:'Category',gallery:'Project Gallery',galleryTitle:'More of the project.',galleryNote:'Gallery placeholders are ready for final project imagery.',placeholder:'Gallery image placeholder',back:'Back to Portfolio',next:'Next Project',rights:'All rights reserved.',subtitle:'PREMIUM GRAPHIC DESIGN',privacy:'Privacy Policy',terms:'Terms of Service'},
-  zh:{home:'首页',about:'关于我们',work:'作品',contact:'联系我们',start:'开始项目',archive:'项目档案',client:'客户',services:'提供的服务',category:'类别',gallery:'项目图库',galleryTitle:'更多项目展示。',galleryNote:'图库占位区域已准备好，可随时替换为最终项目图片。',placeholder:'项目图片占位',back:'返回作品集',next:'下一个项目',rights:'版权所有。',subtitle:'高端平面设计',privacy:'隐私政策',terms:'服务条款'}
-};
-let projectLanguage = 'en';
-try { projectLanguage = localStorage.getItem('infinity-language') || 'en'; } catch (_) {}
-const projectServiceRoutes = {
-  1:'work/branding-identity/logo-design/',2:'work/branding-identity/brand-identity/',3:'work/marketing-design/social-media/',4:'work/marketing-design/poster/',5:'work/marketing-design/flyer/',6:'work/marketing-design/banner/',7:'work/branding-identity/business-card/',8:'work/marketing-design/menu/',9:'work/branding-identity/packaging/',10:'work/branding-identity/logo-design/',11:'work/branding-identity/brand-identity/',12:'work/branding-identity/packaging/',13:'work/website-design/business-website/',14:'work/website-design/portfolio-website/',15:'work/website-design/restaurant-website/',16:'work/website-design/landing-page/'
-};
+(function () {
+  'use strict';
 
-function renderProject() {
-  const text = labels[projectLanguage];
-  const content = project[projectLanguage];
-  const nextId = project.id === window.projectData.length ? 1 : project.id + 1;
-  document.documentElement.lang = projectLanguage === 'zh' ? 'zh-CN' : 'en';
-  document.title = `${content.title} — INfinity Design Studio`;
-  let breadcrumbs = document.querySelector('.project-breadcrumbs');
-  if (!breadcrumbs) {
-    breadcrumbs = document.createElement('nav');
-    breadcrumbs.className = 'project-breadcrumbs';
-    breadcrumbs.setAttribute('aria-label','Breadcrumb');
-    document.querySelector('.project-hero').prepend(breadcrumbs);
+  const body = document.body;
+  const projectId = Number(body.dataset.projectId) || 1;
+  const projectServices = {
+    1: ['Logo Design', '标志设计', 'work/branding-identity/logo-design/'],
+    2: ['Brand Identity', '品牌视觉系统', 'work/branding-identity/brand-identity/'],
+    3: ['Social Media Design', '社交媒体设计', 'work/marketing-design/social-media/'],
+    4: ['Poster Design', '海报设计', 'work/marketing-design/poster/'],
+    5: ['Flyer Design', '宣传单设计', 'work/marketing-design/flyer/'],
+    6: ['Banner Design', '横幅设计', 'work/marketing-design/banner/'],
+    7: ['Business Card', '名片设计', 'work/branding-identity/business-card/'],
+    8: ['Menu Design', '菜单设计', 'work/marketing-design/menu/'],
+    9: ['Packaging', '包装设计', 'work/branding-identity/packaging/'],
+    10: ['Logo Design', '标志设计', 'work/branding-identity/logo-design/'],
+    11: ['Brand Identity', '品牌视觉系统', 'work/branding-identity/brand-identity/'],
+    12: ['Packaging', '包装设计', 'work/branding-identity/packaging/'],
+    13: ['Business Website', '企业网站', 'work/website-design/business-website/'],
+    14: ['Portfolio Website', '作品集网站', 'work/website-design/portfolio-website/'],
+    15: ['Restaurant Website', '餐厅网站', 'work/website-design/restaurant-website/'],
+    16: ['Landing Page', '落地页', 'work/website-design/landing-page/']
+  };
+  const service = projectServices[projectId] || projectServices[1];
+  const labels = {
+    en: {home:'Home',about:'About',work:'Work',contact:'Contact',start:'Start a project',projects:'Projects',coming:'Projects coming soon.',latest:'Our latest work will be added here.',back:'Back to Service',rights:'© 2026 INfinity Design Studio. All rights reserved.',subtitle:'PREMIUM GRAPHIC DESIGN',privacy:'Privacy Policy',terms:'Terms of Service'},
+    zh: {home:'首页',about:'关于我们',work:'作品',contact:'联系我们',start:'开始项目',projects:'项目',coming:'作品即将上线。',latest:'我们最新的作品将会展示在这里。',back:'返回服务',rights:'© 2026 INfinity Design Studio。保留所有权利。',subtitle:'高端平面设计',privacy:'隐私政策',terms:'服务条款'}
+  };
+  let language = 'en';
+  try { language = localStorage.getItem('infinity-language') || 'en'; } catch (_) {}
+
+  function restorePageScroll(resetPosition) {
+    [document.documentElement, body].forEach(element => {
+      element.classList.remove('scroll-lock', 'no-scroll', 'menu-open', 'modal-open', 'nav-open');
+      ['overflow', 'overflow-x', 'overflow-y', 'height', 'max-height', 'position', 'touch-action'].forEach(property => element.style.removeProperty(property));
+    });
+    body.classList.add('ready');
+    if (resetPosition) window.scrollTo(0, 0);
   }
-  breadcrumbs.innerHTML = `<a href="../../index.html#home">${text.home}</a><span aria-hidden="true">/</span><a href="../../work/">${text.work}</a><span aria-hidden="true">/</span><a href="../../${projectServiceRoutes[project.id]}">${content.category}</a><span aria-hidden="true">/</span><span aria-current="page">${content.title}</span>`;
-  document.querySelector('[data-nav="home"]').textContent = text.home;
-  document.querySelector('[data-nav="about"]').textContent = text.about;
-  document.querySelector('[data-nav="work"]').textContent = text.work;
-  document.querySelector('[data-nav="contact"]').textContent = text.contact;
-  document.querySelector('[data-nav="start"]').firstChild.textContent = `${text.start} `;
-  document.querySelector('[data-project-label]').textContent = `${text.archive} / ${String(project.id).padStart(2,'0')}`;
-  document.querySelector('[data-project-title]').textContent = content.title;
-  document.querySelector('[data-project-description]').textContent = content.description;
-  document.querySelector('[data-meta-client-label]').textContent = text.client;
-  document.querySelector('[data-meta-client]').textContent = content.client;
-  document.querySelector('[data-meta-services-label]').textContent = text.services;
-  document.querySelector('[data-meta-services]').textContent = content.services;
-  document.querySelector('[data-meta-category-label]').textContent = text.category;
-  document.querySelector('[data-meta-category]').textContent = content.category;
-  const cover = document.querySelector('[data-project-cover]');
-  cover.src = `../../${project.image}`;
-  cover.alt = projectLanguage === 'zh' ? `${content.title}项目封面` : `${content.title} project cover`;
-  document.querySelector('[data-gallery-label]').textContent = text.gallery;
-  document.querySelector('[data-gallery-title]').textContent = text.galleryTitle;
-  document.querySelector('[data-gallery-note]').textContent = text.galleryNote;
-  document.querySelectorAll('[data-gallery-placeholder]').forEach((element,index) => element.innerHTML = `<b>${String(index+1).padStart(2,'0')}</b><span>${text.placeholder}</span>`);
-  document.querySelector('[data-back]').textContent = `← ${text.back}`;
-  const next = document.querySelector('[data-next]');
-  next.href = `../project-${nextId}/`;
-  next.querySelector('.button-label').textContent = text.next;
-  document.querySelectorAll('.image-logo small').forEach(element => element.textContent = text.subtitle);
-  document.querySelector('[data-rights]').textContent = `© 2026 INfinity Design Studio. ${text.rights}`;
-  document.querySelector('.loader-meta small').textContent = text.archive;
-  const legalLinks = document.querySelectorAll('.footer-legal a');
-  legalLinks[0].textContent = text.privacy;
-  legalLinks[1].textContent = text.terms;
-  legalLinks[0].href = '../../privacy-policy/';
-  legalLinks[1].href = '../../terms-of-service/';
-  document.querySelectorAll('.language-switcher button').forEach(button => button.classList.toggle('active',button.dataset.lang === projectLanguage));
-  renderProjectSocials();
-}
 
-function renderProjectSocials(){
-  const container=document.querySelector('#socialLinks');
-  container.innerHTML=window.socialLinks.map(link=>`<a href="${link.url}" target="_blank" rel="noopener noreferrer" aria-label="${link.label}">${link.icon}<span>${projectLanguage==='zh'?link.zhLabel:link.label}</span></a>`).join('');
-}
+  function renderSocials() {
+    const container = document.querySelector('#socialLinks');
+    if (!container || !Array.isArray(window.socialLinks)) return;
+    container.innerHTML = window.socialLinks.map(link => {
+      const unavailable = /yourusername|youruserid/i.test(link.url);
+      return `<a href="${unavailable ? '#' : link.url}"${unavailable ? ' aria-disabled="true"' : ' target="_blank" rel="noopener noreferrer"'} aria-label="${link.label}" title="${unavailable ? `${link.label} link coming soon` : link.label}">${link.icon}<span>${language === 'zh' ? link.zhLabel : link.label}</span></a>`;
+    }).join('');
+    container.querySelectorAll('[aria-disabled="true"]').forEach(link => link.addEventListener('click', event => event.preventDefault()));
+  }
 
-document.querySelectorAll('.language-switcher button').forEach(button=>button.addEventListener('click',()=>{
-  projectLanguage=button.dataset.lang;
-  try{localStorage.setItem('infinity-language',projectLanguage)}catch(_){}
-  renderProject();
-}));
+  function render() {
+    const text = labels[language];
+    const serviceName = language === 'zh' ? service[1] : service[0];
+    document.documentElement.lang = language === 'zh' ? 'zh-CN' : 'en';
+    document.title = `${serviceName} ${text.projects} — INfinity Design Studio`;
+    document.querySelector('.project-main').innerHTML = `<section class="project-hero section"><nav class="project-breadcrumbs" aria-label="Breadcrumb"><a href="../../index.html#home">${text.home}</a><span aria-hidden="true">/</span><a href="../../work/">${text.work}</a><span aria-hidden="true">/</span><a href="../../${service[2]}">${serviceName}</a><span aria-hidden="true">/</span><span aria-current="page">${text.projects}</span></nav><p class="project-label">INFINITY / ${text.projects.toUpperCase()}</p><h1 class="project-title">${serviceName} ${text.projects}</h1></section><section class="legacy-project-empty section" role="status"><div><h2>${text.coming}</h2><p>${text.latest}</p></div><a class="btn-link" href="../../${service[2]}">← ${text.back}</a></section>`;
+    document.querySelector('[data-nav="home"]').textContent = text.home;
+    document.querySelector('[data-nav="about"]').textContent = text.about;
+    document.querySelector('[data-nav="work"]').textContent = text.work;
+    document.querySelector('[data-nav="contact"]').textContent = text.contact;
+    document.querySelector('[data-nav="start"]').firstChild.textContent = `${text.start} `;
+    document.querySelectorAll('.image-logo small').forEach(element => { element.textContent = text.subtitle; });
+    document.querySelector('[data-rights]').textContent = text.rights;
+    const legalLinks = document.querySelectorAll('.footer-legal a');
+    legalLinks[0].textContent = text.privacy;
+    legalLinks[1].textContent = text.terms;
+    legalLinks[0].href = '../../privacy-policy/';
+    legalLinks[1].href = '../../terms-of-service/';
+    document.querySelectorAll('.language-switcher button').forEach(button => button.classList.toggle('active', button.dataset.lang === language));
+    document.querySelector('.loader')?.classList.add('loaded');
+    renderSocials();
+    restorePageScroll(true);
+  }
 
-const projectMenu=document.querySelector('.menu-toggle');
-const projectNav=document.querySelector('.nav');
-projectMenu.addEventListener('click',()=>{
-  const open=projectNav.classList.toggle('open');
-  projectMenu.setAttribute('aria-expanded',String(open));
-  projectMenu.setAttribute('aria-label',open?'Close navigation':'Open navigation');
-  document.body.style.overflow=open?'hidden':'';
-});
-projectNav.querySelectorAll('a').forEach(link=>link.addEventListener('click',()=>{projectNav.classList.remove('open');projectMenu.setAttribute('aria-expanded','false');projectMenu.setAttribute('aria-label','Open navigation');document.body.style.overflow='';}));
-const projectReveal=new IntersectionObserver(entries=>entries.forEach(entry=>{if(entry.isIntersecting){entry.target.classList.add('visible');projectReveal.unobserve(entry.target);}}),{threshold:.1});
-document.querySelectorAll('.reveal').forEach(element=>projectReveal.observe(element));
-window.addEventListener('scroll',()=>document.querySelector('.header').classList.toggle('scrolled',window.scrollY>25),{passive:true});
-window.addEventListener('load',()=>{document.querySelector('.loader').classList.add('loaded');document.body.classList.add('ready');});
-window.setTimeout(()=>{document.querySelector('.loader').classList.add('loaded');document.body.classList.add('ready');},1800);
-renderProject();
+  document.querySelectorAll('.language-switcher button').forEach(button => button.addEventListener('click', () => {
+    language = button.dataset.lang;
+    try { localStorage.setItem('infinity-language', language); } catch (_) {}
+    render();
+  }));
+
+  const menu = document.querySelector('.menu-toggle');
+  const nav = document.querySelector('.nav');
+  menu.addEventListener('click', () => {
+    const open = nav.classList.toggle('open');
+    menu.setAttribute('aria-expanded', String(open));
+    menu.setAttribute('aria-label', open ? 'Close navigation' : 'Open navigation');
+    body.style.overflow = open ? 'hidden' : '';
+  });
+  nav.querySelectorAll('a').forEach(link => link.addEventListener('click', () => {
+    nav.classList.remove('open');
+    menu.setAttribute('aria-expanded', 'false');
+    menu.setAttribute('aria-label', 'Open navigation');
+    restorePageScroll(false);
+  }));
+  window.addEventListener('pageshow', () => restorePageScroll(false));
+  if ('scrollRestoration' in history) history.scrollRestoration = 'manual';
+  render();
+})();
