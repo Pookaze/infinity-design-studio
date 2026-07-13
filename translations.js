@@ -42,3 +42,18 @@ window.siteTranslations = {
   },
   placeholders: { zh: { 'Jane Smith':'您的姓名','jane@company.com':'您的邮箱','Your business or brand':'您的企业或品牌','Your vision, goals and preferred timeline...':'请描述您的愿景、目标与期望时间…' } }
 };
+
+Object.assign(window.siteTranslations.zh, {
+  'Services':'服务',
+  'Explore three focused disciplines built to create clear, distinctive and commercially effective brands.':'探索三大核心设计领域，打造清晰、独特且具有商业成效的品牌。',
+  'Branding & Identity':'品牌与视觉识别',
+  'Distinctive logos, identity systems, business cards and packaging designed to build recognition.':'通过独特的标志、视觉系统、名片与包装设计建立品牌认知。',
+  'Marketing Design':'营销设计',
+  'Strategic social media, posters, flyers, banners and menus that make every message stand out.':'以策略性的社交媒体、海报、宣传单、横幅与菜单设计，让每一条信息脱颖而出。',
+  'Website Design':'网站设计',
+  'Modern, responsive websites and landing pages designed for clarity, credibility and conversion.':'打造现代响应式网站与落地页，提升清晰度、可信度与转化表现。',
+  'View Services':'查看服务',
+  '01 / BRAND SYSTEMS':'01 / 品牌系统',
+  '02 / CAMPAIGNS':'02 / 营销活动',
+  '03 / DIGITAL':'03 / 数字体验'
+});

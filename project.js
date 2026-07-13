@@ -6,6 +6,9 @@ const labels = {
 };
 let projectLanguage = 'en';
 try { projectLanguage = localStorage.getItem('infinity-language') || 'en'; } catch (_) {}
+const projectServiceRoutes = {
+  1:'work/branding-identity/logo-design/',2:'work/branding-identity/brand-identity/',3:'work/marketing-design/social-media/',4:'work/marketing-design/poster/',5:'work/marketing-design/flyer/',6:'work/marketing-design/banner/',7:'work/branding-identity/business-card/',8:'work/marketing-design/menu/',9:'work/branding-identity/packaging/',10:'work/branding-identity/logo-design/',11:'work/branding-identity/brand-identity/',12:'work/branding-identity/packaging/',13:'work/website-design/business-website/',14:'work/website-design/portfolio-website/',15:'work/website-design/restaurant-website/',16:'work/website-design/landing-page/'
+};
 
 function renderProject() {
   const text = labels[projectLanguage];
@@ -13,6 +16,14 @@ function renderProject() {
   const nextId = project.id === window.projectData.length ? 1 : project.id + 1;
   document.documentElement.lang = projectLanguage === 'zh' ? 'zh-CN' : 'en';
   document.title = `${content.title} — INfinity Design Studio`;
+  let breadcrumbs = document.querySelector('.project-breadcrumbs');
+  if (!breadcrumbs) {
+    breadcrumbs = document.createElement('nav');
+    breadcrumbs.className = 'project-breadcrumbs';
+    breadcrumbs.setAttribute('aria-label','Breadcrumb');
+    document.querySelector('.project-hero').prepend(breadcrumbs);
+  }
+  breadcrumbs.innerHTML = `<a href="../../index.html#home">${text.home}</a><span aria-hidden="true">/</span><a href="../../work/">${text.work}</a><span aria-hidden="true">/</span><a href="../../${projectServiceRoutes[project.id]}">${content.category}</a><span aria-hidden="true">/</span><span aria-current="page">${content.title}</span>`;
   document.querySelector('[data-nav="home"]').textContent = text.home;
   document.querySelector('[data-nav="about"]').textContent = text.about;
   document.querySelector('[data-nav="work"]').textContent = text.work;
@@ -44,6 +55,8 @@ function renderProject() {
   const legalLinks = document.querySelectorAll('.footer-legal a');
   legalLinks[0].textContent = text.privacy;
   legalLinks[1].textContent = text.terms;
+  legalLinks[0].href = '../../privacy-policy/';
+  legalLinks[1].href = '../../terms-of-service/';
   document.querySelectorAll('.language-switcher button').forEach(button => button.classList.toggle('active',button.dataset.lang === projectLanguage));
   renderProjectSocials();
 }
@@ -64,9 +77,10 @@ const projectNav=document.querySelector('.nav');
 projectMenu.addEventListener('click',()=>{
   const open=projectNav.classList.toggle('open');
   projectMenu.setAttribute('aria-expanded',String(open));
+  projectMenu.setAttribute('aria-label',open?'Close navigation':'Open navigation');
   document.body.style.overflow=open?'hidden':'';
 });
-projectNav.querySelectorAll('a').forEach(link=>link.addEventListener('click',()=>{projectNav.classList.remove('open');projectMenu.setAttribute('aria-expanded','false');document.body.style.overflow='';}));
+projectNav.querySelectorAll('a').forEach(link=>link.addEventListener('click',()=>{projectNav.classList.remove('open');projectMenu.setAttribute('aria-expanded','false');projectMenu.setAttribute('aria-label','Open navigation');document.body.style.overflow='';}));
 const projectReveal=new IntersectionObserver(entries=>entries.forEach(entry=>{if(entry.isIntersecting){entry.target.classList.add('visible');projectReveal.unobserve(entry.target);}}),{threshold:.1});
 document.querySelectorAll('.reveal').forEach(element=>projectReveal.observe(element));
 window.addEventListener('scroll',()=>document.querySelector('.header').classList.toggle('scrolled',window.scrollY>25),{passive:true});

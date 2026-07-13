@@ -5,6 +5,7 @@ const navLinks = [...document.querySelectorAll('.nav a')];
 const sections = [...document.querySelectorAll('main section[id]')];
 const loader = document.querySelector('.loader');
 const loaderCount = document.querySelector('.loader-meta b');
+const whatsappNumber = '';
 const originalText = new WeakMap();
 const originalPlaceholders = new WeakMap();
 let currentLanguage = 'en';
@@ -52,6 +53,22 @@ document.querySelectorAll('.language-switcher button').forEach(button => button.
 try { currentLanguage = localStorage.getItem('infinity-language') || 'en'; } catch (_) { currentLanguage = 'en'; }
 applyLanguage(currentLanguage);
 
+const whatsappLink = document.querySelector('.whatsapp-link, .contact-actions a[href*="whatsapp"], .contact-actions a[href*="wa.me"]');
+if (whatsappLink) {
+  const message = encodeURIComponent('Hello INfinity Design Studio, I would like to discuss a project.');
+  if (/^\d{8,15}$/.test(whatsappNumber)) {
+    whatsappLink.href = `https://wa.me/${whatsappNumber}?text=${message}`;
+    whatsappLink.target = '_blank';
+    whatsappLink.rel = 'noopener noreferrer';
+  } else {
+    whatsappLink.href = '#';
+    whatsappLink.removeAttribute('target');
+    whatsappLink.setAttribute('aria-disabled', 'true');
+    whatsappLink.setAttribute('title', 'WhatsApp number required');
+    whatsappLink.addEventListener('click', event => event.preventDefault());
+  }
+}
+
 let progress = 0;
 const ticker = window.setInterval(() => {
   progress = Math.min(progress + Math.ceil(Math.random() * 11), 99);
@@ -83,7 +100,21 @@ menuButton.addEventListener('click', () => {
 navLinks.forEach(link => link.addEventListener('click', () => {
   nav.classList.remove('open');
   menuButton.setAttribute('aria-expanded', 'false');
+  menuButton.setAttribute('aria-label', 'Open navigation');
   document.body.style.overflow = '';
+}));
+
+document.querySelectorAll('a[href^="#"]').forEach(link => link.addEventListener('click', event => {
+  const selector = link.getAttribute('href');
+  if (!selector || selector === '#') return;
+  const target = document.querySelector(selector);
+  if (!target) return;
+  event.preventDefault();
+  const visibleStart = target.querySelector('.section-kicker') || target;
+  const contentTop = target.offsetTop + (visibleStart === target ? 0 : visibleStart.offsetTop);
+  const top = contentTop - 104;
+  window.scrollTo({ top: Math.max(0, top), behavior: 'smooth' });
+  if (history.pushState) history.pushState(null, '', selector); else location.hash = selector;
 }));
 
 const revealObserver = new IntersectionObserver(entries => entries.forEach(entry => {
