@@ -115,7 +115,7 @@ function showTestimonial(index) {
   const item = testimonials[testimonialIndex];
   quoteWrap.querySelector('blockquote').textContent = translateValue(item.quote);
   quoteWrap.querySelector('.quote-author>span').textContent = item.initials;
-  quoteWrap.querySelector('.quote-author b').textContent = item.name;
+  quoteWrap.querySelector('.quote-author b').textContent = translateValue(item.name);
   quoteWrap.querySelector('.quote-author small').textContent = translateValue(item.role);
   quoteWrap.querySelector('.quote-nav i').style.width = `${((testimonialIndex + 1) / testimonials.length) * 100}%`;
 }
