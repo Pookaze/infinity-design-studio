@@ -20,6 +20,18 @@
   const projectsUrl = service => serviceUrl(service) + 'projects/';
   const serviceByKey = key => data.services[key];
   const allServices = Object.entries(data.services);
+  const posterProject = {
+    title: ['Commercial Poster Design Series', '商业海报设计系列'],
+    description: [
+      'A bold three-poster collection for fintech, e-commerce and property campaigns, built around clear hierarchy and high-impact art direction.',
+      '一套涵盖金融科技、电商与房地产推广的三款海报，以清晰的信息层级与高冲击力视觉方向呈现。'
+    ],
+    category: ['Poster Design', '海报设计'],
+    coverAlt: [
+      'USDT fee-check promotional poster with a smartphone and TRON graphics',
+      '以手机与 TRON 视觉元素呈现的 USDT 手续费查询推广海报'
+    ]
+  };
 
   function restorePageScroll(resetPosition) {
     const roots = [document.documentElement, body];
@@ -87,6 +99,9 @@
     const category = data.categories[service.category];
     const pageTitle = `${pick(service.title)} ${t('projects')}`;
     const trail = [{label:t('home'),url:homeUrl},{label:t('work'),url:root+'work/'},{label:pick(category.title),url:categoryUrl(service.category)},{label:pick(service.title),url:serviceUrl(service)},{label:pageTitle}];
+    if (serviceKey === 'poster') {
+      return hero(pageTitle, pick(service.description), trail, lang === 'zh' ? 'INFINITY / 项目' : 'INFINITY / PROJECTS') + `<section class="content-section project-listing"><article class="project-showcase-card"><a class="project-showcase-cover" href="${root}projects/project-4/" aria-label="${t('viewProject')}: ${pick(posterProject.title)}"><img src="${img('assets/images/projects/poster-design/usdt-fee-check-poster.jpg')}" width="1254" height="1254" alt="${pick(posterProject.coverAlt)}" decoding="async" fetchpriority="high"></a><div class="project-showcase-copy"><p class="inner-kicker">${pick(posterProject.category)}</p><h2>${pick(posterProject.title)}</h2><p>${pick(posterProject.description)}</p><div class="project-category"><span>${lang === 'zh' ? '类别' : 'Category'}</span><strong>${pick(posterProject.category)}</strong></div><a class="btn btn-gold project-showcase-action" href="${root}projects/project-4/"><b class="button-label">${t('viewProject')}</b><span>↗</span></a></div></article><a class="back-link" href="${serviceUrl(service)}">← ${t('backService')}</a></section>`;
+    }
     return hero(pageTitle, pick(service.description), trail, lang === 'zh' ? 'INFINITY / 项目' : 'INFINITY / PROJECTS') + `<section class="content-section"><div class="projects-empty" role="status"><h2>${t('comingTitle')}</h2><p>${t('comingBody')}</p></div><a class="back-link" href="${serviceUrl(service)}">← ${t('backService')}</a></section>`;
   }
 

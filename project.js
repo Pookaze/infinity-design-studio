@@ -28,6 +28,48 @@
   };
   let language = 'en';
   try { language = localStorage.getItem('infinity-language') || 'en'; } catch (_) {}
+  let projectObserver;
+  const pick = value => Array.isArray(value) ? value[language === 'zh' ? 1 : 0] : value;
+  const posterProject = {
+    title: ['Commercial Poster Design Series', '商业海报设计系列'],
+    description: [
+      'A bold three-poster collection created for fintech, e-commerce and property campaigns. Each direction combines fast-scanning hierarchy, confident colour and conversion-focused messaging.',
+      '一套为金融科技、电商与房地产推广打造的三款海报。每个方向都结合清晰易读的信息层级、自信的色彩运用与转化导向的信息表达。'
+    ],
+    galleryTitle: ['Poster Gallery', '海报画廊'],
+    galleryIntro: [
+      'Three distinct visual systems, each tailored to its audience while sharing a crisp, high-impact commercial finish.',
+      '三套各具特色的视觉系统，分别针对不同受众，同时保持清晰、有冲击力的商业呈现。'
+    ],
+    meta: [
+      {label:['Category', '类别'], value:['Poster Design', '海报设计']},
+      {label:['Deliverables', '交付内容'], value:['3 Poster Designs', '3 款海报设计']},
+      {label:['Year', '年份'], value:['2026', '2026']}
+    ],
+    images: [
+      {
+        src:'assets/images/projects/poster-design/usdt-fee-check-poster.jpg',
+        width:1254,
+        height:1254,
+        alt:['USDT fee-check promotional poster with a smartphone and TRON graphics', '以手机与 TRON 视觉元素呈现的 USDT 手续费查询推广海报'],
+        caption:['Fintech fee-check campaign', '金融科技手续费查询推广']
+      },
+      {
+        src:'assets/images/projects/poster-design/amazon-shop-smarter-poster.jpg',
+        width:1254,
+        height:1254,
+        alt:['E-commerce promotional poster with parcels, shopping products and a mobile app', '以包裹、购物产品与手机应用呈现的电商推广海报'],
+        caption:['E-commerce promotion', '电商推广']
+      },
+      {
+        src:'assets/images/projects/poster-design/sunway-velocity-two-poster.jpg',
+        width:1280,
+        height:960,
+        alt:['Property launch poster featuring a Kuala Lumpur residential tower and city skyline', '以吉隆坡住宅大楼与城市天际线呈现的房地产项目海报'],
+        caption:['Property launch campaign', '房地产项目推广']
+      }
+    ]
+  };
 
   function restorePageScroll(resetPosition) {
     [document.documentElement, body].forEach(element => {
@@ -48,12 +90,38 @@
     container.querySelectorAll('[aria-disabled="true"]').forEach(link => link.addEventListener('click', event => event.preventDefault()));
   }
 
+  function posterCaseStudy(text, serviceName) {
+    const meta = posterProject.meta.map(item => `<div><span>${pick(item.label)}</span><strong>${pick(item.value)}</strong></div>`).join('');
+    const gallery = posterProject.images.map((image, index) => `<figure class="poster-gallery-item project-reveal${index === 0 ? ' poster-gallery-featured' : ''}" style="--reveal-index:${index}"><div class="poster-image-frame" style="--poster-ratio:${image.width} / ${image.height}"><img src="../../${image.src}" width="${image.width}" height="${image.height}" alt="${pick(image.alt)}" ${index === 0 ? 'fetchpriority="high"' : 'loading="lazy"'} decoding="async"></div><figcaption><span>0${index + 1}</span>${pick(image.caption)}</figcaption></figure>`).join('');
+    return `<section class="project-hero section poster-project-hero"><nav class="project-breadcrumbs" aria-label="Breadcrumb"><a href="../../index.html#home">${text.home}</a><span aria-hidden="true">/</span><a href="../../work/">${text.work}</a><span aria-hidden="true">/</span><a href="../../work/marketing-design/poster/">${serviceName}</a><span aria-hidden="true">/</span><span aria-current="page">${pick(posterProject.title)}</span></nav><p class="project-label">INFINITY / ${serviceName.toUpperCase()}</p><h1 class="project-title">${pick(posterProject.title)}</h1><p class="project-description">${pick(posterProject.description)}</p><div class="project-meta">${meta}</div></section><section class="poster-gallery-section section"><div class="poster-gallery-intro project-reveal"><p class="project-label">${language === 'zh' ? '精选作品' : 'SELECTED WORK'}</p><h2>${pick(posterProject.galleryTitle)}</h2><p>${pick(posterProject.galleryIntro)}</p></div><div class="poster-gallery" aria-label="${pick(posterProject.galleryTitle)}">${gallery}</div><a class="btn-link poster-back-link" href="../../work/marketing-design/poster/projects/">← ${language === 'zh' ? '返回海报设计项目' : 'Back to Poster Design Projects'}</a></section>`;
+  }
+
+  function bindProjectAnimations() {
+    if (projectObserver) projectObserver.disconnect();
+    const items = document.querySelectorAll('.project-reveal');
+    if (!items.length) return;
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches || !('IntersectionObserver' in window)) {
+      items.forEach(item => item.classList.add('is-visible'));
+      return;
+    }
+    projectObserver = new IntersectionObserver(entries => {
+      entries.forEach(entry => {
+        if (!entry.isIntersecting) return;
+        entry.target.classList.add('is-visible');
+        projectObserver.unobserve(entry.target);
+      });
+    }, {rootMargin:'0px 0px -8% 0px', threshold:.08});
+    items.forEach(item => projectObserver.observe(item));
+  }
+
   function render() {
     const text = labels[language];
     const serviceName = language === 'zh' ? service[1] : service[0];
+    const isPosterProject = projectId === 4;
     document.documentElement.lang = language === 'zh' ? 'zh-CN' : 'en';
-    document.title = `${serviceName} ${text.projects} — INfinity Design Studio`;
-    document.querySelector('.project-main').innerHTML = `<section class="project-hero section"><nav class="project-breadcrumbs" aria-label="Breadcrumb"><a href="../../index.html#home">${text.home}</a><span aria-hidden="true">/</span><a href="../../work/">${text.work}</a><span aria-hidden="true">/</span><a href="../../${service[2]}">${serviceName}</a><span aria-hidden="true">/</span><span aria-current="page">${text.projects}</span></nav><p class="project-label">INFINITY / ${text.projects.toUpperCase()}</p><h1 class="project-title">${serviceName} ${text.projects}</h1></section><section class="legacy-project-empty section" role="status"><div><h2>${text.coming}</h2><p>${text.latest}</p></div><a class="btn-link" href="../../${service[2]}">← ${text.back}</a></section>`;
+    document.title = isPosterProject ? `${pick(posterProject.title)} — INfinity Design Studio` : `${serviceName} ${text.projects} — INfinity Design Studio`;
+    document.querySelector('meta[name="description"]')?.setAttribute('content', isPosterProject ? pick(posterProject.description) : text.latest);
+    document.querySelector('.project-main').innerHTML = isPosterProject ? posterCaseStudy(text, serviceName) : `<section class="project-hero section"><nav class="project-breadcrumbs" aria-label="Breadcrumb"><a href="../../index.html#home">${text.home}</a><span aria-hidden="true">/</span><a href="../../work/">${text.work}</a><span aria-hidden="true">/</span><a href="../../${service[2]}">${serviceName}</a><span aria-hidden="true">/</span><span aria-current="page">${text.projects}</span></nav><p class="project-label">INFINITY / ${text.projects.toUpperCase()}</p><h1 class="project-title">${serviceName} ${text.projects}</h1></section><section class="legacy-project-empty section" role="status"><div><h2>${text.coming}</h2><p>${text.latest}</p></div><a class="btn-link" href="../../${service[2]}">← ${text.back}</a></section>`;
     document.querySelector('[data-nav="home"]').textContent = text.home;
     document.querySelector('[data-nav="about"]').textContent = text.about;
     document.querySelector('[data-nav="work"]').textContent = text.work;
@@ -69,6 +137,7 @@
     document.querySelectorAll('.language-switcher button').forEach(button => button.classList.toggle('active', button.dataset.lang === language));
     document.querySelector('.loader')?.classList.add('loaded');
     renderSocials();
+    bindProjectAnimations();
     restorePageScroll(true);
   }
 

@@ -41,6 +41,152 @@
   letter-spacing: clamp(-6px, -.45vw, -2px);
 }
 
+.project-description {
+  max-width: 760px;
+  margin-top: 32px;
+  color: #aaa69e;
+  font-size: clamp(15px, 1.6vw, 18px);
+  line-height: 1.8;
+}
+
+.project-meta {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  max-width: 920px;
+  margin-top: clamp(45px, 6vw, 76px);
+  border-top: 1px solid var(--line);
+  border-bottom: 1px solid var(--line);
+}
+
+.project-meta > div {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 10px;
+  padding: 22px 26px;
+  border-right: 1px solid var(--line);
+}
+
+.project-meta > div:last-child { border-right: 0; }
+
+.project-meta span {
+  color: #77736d;
+  font-size: 9px;
+  letter-spacing: .16em;
+  text-transform: uppercase;
+}
+
+.project-meta strong {
+  color: #ece8df;
+  font: 500 14px/1.4 'Manrope', sans-serif;
+}
+
+.poster-project-hero { padding-bottom: clamp(75px, 9vw, 130px); }
+
+.poster-gallery-section {
+  padding-top: clamp(75px, 9vw, 140px);
+  padding-bottom: clamp(90px, 11vw, 170px);
+  border-top: 1px solid var(--line);
+}
+
+.poster-gallery-intro {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(300px, .72fr);
+  column-gap: clamp(50px, 9vw, 140px);
+  align-items: end;
+  margin-bottom: clamp(48px, 7vw, 90px);
+}
+
+.poster-gallery-intro .project-label {
+  grid-column: 1 / -1;
+  margin-bottom: 20px;
+}
+
+.poster-gallery-intro h2 {
+  font: 600 clamp(42px, 6vw, 82px)/.98 'Manrope', sans-serif;
+  letter-spacing: -.055em;
+}
+
+.poster-gallery-intro > p:last-child {
+  color: #96928a;
+  font-size: 15px;
+  line-height: 1.8;
+}
+
+.poster-gallery {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: clamp(28px, 4vw, 58px) clamp(18px, 3vw, 34px);
+}
+
+.poster-gallery-featured { grid-column: 1 / -1; }
+
+.poster-image-frame {
+  position: relative;
+  aspect-ratio: var(--poster-ratio, 1);
+  overflow: hidden;
+  border: 1px solid rgba(201, 163, 91, .2);
+  background: #101010;
+  box-shadow: 0 30px 90px rgba(0, 0, 0, .3);
+}
+
+.poster-gallery-featured .poster-image-frame {
+  max-width: 980px;
+  margin-inline: auto;
+}
+
+.poster-image-frame::after {
+  position: absolute;
+  inset: 0;
+  border: 1px solid rgba(255, 255, 255, .04);
+  content: '';
+  pointer-events: none;
+}
+
+.poster-image-frame img {
+  width: 100%;
+  height: 100%;
+  display: block;
+  object-fit: contain;
+  transition: transform .85s cubic-bezier(.2,.7,.2,1), filter .55s;
+}
+
+.poster-gallery-item:hover .poster-image-frame img {
+  transform: scale(1.018);
+  filter: saturate(1.04);
+}
+
+.poster-gallery-item figcaption {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding-top: 16px;
+  color: #aaa69e;
+  font-size: 12px;
+}
+
+.poster-gallery-item figcaption span {
+  color: var(--gold);
+  font-size: 9px;
+  letter-spacing: .12em;
+}
+
+.poster-back-link {
+  display: inline-flex;
+  margin-top: clamp(52px, 7vw, 90px);
+}
+
+.project-reveal {
+  opacity: 0;
+  transform: translateY(28px);
+  transition: opacity .75s ease calc(var(--reveal-index, 0) * 90ms), transform .75s cubic-bezier(.2,.7,.2,1) calc(var(--reveal-index, 0) * 90ms);
+}
+
+.project-reveal.is-visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
 .legacy-project-empty { padding-top: 40px; }
 .legacy-project-empty > div {
   display: grid;
@@ -77,4 +223,30 @@
     line-height: 1;
   }
   .project-breadcrumbs { margin-bottom: 35px; }
+  .project-meta { grid-template-columns: 1fr; }
+  .project-meta > div,
+  .project-meta > div:last-child {
+    border-right: 0;
+    border-bottom: 1px solid var(--line);
+  }
+  .project-meta > div:last-child { border-bottom: 0; }
+  .poster-gallery-intro { display: block; }
+  .poster-gallery-intro h2 { margin-bottom: 24px; }
+  .poster-gallery { grid-template-columns: 1fr; }
+  .poster-gallery-featured { grid-column: auto; }
+  .poster-gallery-section { padding-top: 72px; }
+}
+
+@media (max-width: 900px) and (min-width: 621px) {
+  .poster-gallery-intro { grid-template-columns: 1fr; }
+  .poster-gallery-intro h2 { margin-bottom: 24px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .project-reveal {
+    opacity: 1;
+    transform: none;
+    transition: none;
+  }
+  .poster-image-frame img { transition: none; }
 }
