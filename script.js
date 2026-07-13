@@ -48,10 +48,6 @@ document.querySelectorAll('.language-switcher button').forEach(button => button.
   try { localStorage.setItem('infinity-language', button.dataset.lang); } catch (_) {}
   applyLanguage(button.dataset.lang);
   showTestimonial(testimonialIndex);
-  if (!serviceModal.hidden && modalTrigger) {
-    const slug = modalTrigger.closest('.service-card')?.dataset.service;
-    if (slug) openServiceModal(slug, modalTrigger);
-  }
 }));
 try { currentLanguage = localStorage.getItem('infinity-language') || 'en'; } catch (_) { currentLanguage = 'en'; }
 applyLanguage(currentLanguage);
@@ -185,53 +181,6 @@ contactForm.addEventListener('submit', event => {
   event.currentTarget.reset();
 });
 
-const serviceContent = {
-  'logo-design': { folder: 'logo', title: 'Logo Design', description: 'Six distinctive logo systems presented across foil, paper, cards, signage and premium brand applications.', samples: ['Luxury fashion monogram', 'Technology company logo', 'Coffee shop branding', 'Restaurant logo', 'Real estate logo', 'Modern startup signage'] },
-  'brand-identity': { folder: 'branding', title: 'Brand Identity', description: 'Complete identity worlds spanning strategy, color, typography, stationery, packaging and brand guidelines.', samples: ['Brand guideline system', 'Color and typography palette', 'Business card suite', 'Letterhead and envelope', 'Notebook and shopping bag', 'Packaging applications'] },
-  'social-media': { folder: 'social', title: 'Social Media Design', description: 'Premium campaign systems presented in realistic phone mockups for feeds, stories, ads and promotions.', samples: ['Instagram feed', 'Instagram carousel', 'Story design', 'Facebook advertisement', 'Product promotion', 'Luxury campaign'] },
-  'poster-design': { folder: 'poster', title: 'Poster Design', description: 'Large-format campaign work shown in realistic city billboards, lightboxes and environmental displays.', samples: ['Concert poster', 'Fashion poster', 'Technology event', 'Restaurant promotion', 'Movie poster', 'Fitness campaign'] },
-  'flyer-design': { folder: 'flyer', title: 'Flyer Design', description: 'Print-ready promotional design presented with premium papers, tactile finishes and natural studio shadows.', samples: ['Restaurant flyer', 'Corporate flyer', 'Event flyer', 'Gym flyer', 'Real estate flyer', 'Coffee shop flyer'] },
-  'banner-design': { folder: 'banner', title: 'Banner Design', description: 'Responsive campaign visuals across digital screens, social covers, exhibitions and outdoor advertising.', samples: ['Website hero banner', 'Facebook cover', 'LinkedIn banner', 'Roll-up banner', 'Trade show banner', 'Outdoor advertising'] },
-  'business-card': { folder: 'business-card', title: 'Business Card Design', description: 'Luxury stationery showcasing premium stocks, metallic foil, embossing and contemporary finishes.', samples: ['Black and gold card', 'Minimal white card', 'Gold foil card', 'Embossed card', 'Rounded-corner card', 'Hand-held card mockup'] },
-  'menu-design': { folder: 'menu', title: 'Menu Design', description: 'Hospitality menus styled on elegant tables with premium materials, lighting and considered details.', samples: ['Café menu', 'Restaurant menu', 'Fine dining menu', 'Cocktail bar menu', 'Dessert shop menu', 'Tasting menu'] },
-  'packaging-design': { folder: 'packaging', title: 'Packaging Design', description: 'Shelf-ready packaging presented with tactile materials, foil details and professional product lighting.', samples: ['Coffee packaging', 'Perfume box', 'Cosmetic packaging', 'Food box', 'Bottle label', 'Luxury shopping bag'] },
-  'website-design': { folder: 'website', title: 'Website Design', description: 'Website UI design, responsive websites, landing pages, portfolio websites, business websites, mobile-friendly layouts and basic SEO setup.', samples: ['Creative Agency Website', 'Personal Portfolio Website', 'Restaurant Website', 'Modern Business Landing Page'] }
-};
-
-const serviceModal = document.querySelector('#serviceModal');
-const modalTitle = serviceModal.querySelector('#modalTitle');
-const modalDescription = serviceModal.querySelector('.modal-description');
-const modalGallery = serviceModal.querySelector('.modal-gallery');
-let modalTrigger = null;
-
-function openServiceModal(slug, trigger) {
-  const content = serviceContent[slug];
-  if (!content) return;
-  const localized = currentLanguage === 'zh' ? window.modalTranslations[slug] : null;
-  const sampleNames = localized?.samples || content.samples;
-  modalTrigger = trigger;
-  modalTitle.textContent = translateValue(content.title);
-  modalDescription.textContent = localized?.description || content.description;
-  modalGallery.innerHTML = sampleNames.map((name, index) => `<figure><button class="modal-image-open" aria-label="Open ${name} preview"><img src="assets/images/portfolio/${content.folder}/project-${index + 1}.webp" data-board="assets/images/portfolio/${content.folder}/showcase-board.png" alt="${name}" loading="lazy"></button><figcaption>${String(index + 1).padStart(2, '0')} / ${name}</figcaption></figure>`).join('');
-  modalGallery.querySelectorAll('.modal-image-open').forEach(button => button.addEventListener('click', () => openImageLightbox(button.querySelector('img'), content.title, button.querySelector('img').alt, content.title)));
-  serviceModal.hidden = false;
-  document.body.style.overflow = 'hidden';
-  serviceModal.querySelector('.modal-close').focus();
-}
-
-function closeServiceModal() {
-  serviceModal.hidden = true;
-  document.body.style.overflow = '';
-  if (modalTrigger) modalTrigger.focus();
-}
-
-document.querySelectorAll('.service-card').forEach(card => {
-  const button = card.querySelector('.service-open');
-  button.addEventListener('click', () => openServiceModal(card.dataset.service, button));
-});
-serviceModal.querySelectorAll('[data-close-modal]').forEach(element => element.addEventListener('click', closeServiceModal));
-serviceModal.querySelector('.modal-cta').addEventListener('click', closeServiceModal);
-
 const filterButtons = [...document.querySelectorAll('.work-filters button')];
 const portfolioCards = [...document.querySelectorAll('.work-card')];
 filterButtons.forEach(button => button.addEventListener('click', () => {
@@ -263,7 +212,7 @@ function openImageLightbox(image, title, description, category, trigger = null) 
 function closeLightbox() {
   lightbox.hidden = true;
   lightboxImage.src = '';
-  document.body.style.overflow = serviceModal.hidden ? '' : 'hidden';
+  document.body.style.overflow = '';
   if (lightboxTrigger) lightboxTrigger.focus();
 }
 document.querySelectorAll('.lightbox-open').forEach(button => button.addEventListener('click', () => {
@@ -271,15 +220,11 @@ document.querySelectorAll('.lightbox-open').forEach(button => button.addEventLis
   const card = button.closest('.work-card');
   openImageLightbox(image, card.querySelector('h3').textContent, card.querySelector('p').textContent, card.dataset.category.replace('-', ' '), button);
 }));
-document.querySelectorAll('.project-view').forEach(button => button.addEventListener('click', () => {
-  button.closest('.work-card').querySelector('.lightbox-open').click();
-}));
 lightbox.querySelector('button').addEventListener('click', closeLightbox);
 lightbox.addEventListener('click', event => { if (event.target === lightbox) closeLightbox(); });
 
 document.addEventListener('keydown', event => {
   if (event.key !== 'Escape') return;
-  if (!serviceModal.hidden) closeServiceModal();
   if (!lightbox.hidden) closeLightbox();
 });
 
