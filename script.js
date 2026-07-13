@@ -33,7 +33,7 @@ function applyLanguage(language, root = document.body) {
   });
   document.documentElement.lang = language === 'zh' ? 'zh-CN' : 'en';
   document.title = language === 'zh' ? 'INfinity Design Studio — 高端平面设计' : 'INfinity Design Studio — Premium Graphic Design';
-  if (root === document.body) document.querySelector('.hero h1').innerHTML = language === 'zh' ? '我们打造具有<br><em>长久影响力</em>的品牌。' : 'We create brands<br>with <em>lasting</em> impact.';
+  if (root === document.body) document.querySelector('.hero h1').innerHTML = language === 'zh' ? '我们打造具有<br><span class="display-accent">长久影响力</span>的品牌。' : 'We create brands<br>with <span class="display-accent">lasting</span> impact.';
   document.querySelectorAll('.language-switcher button').forEach(button => button.classList.toggle('active', button.dataset.lang === language));
   renderSocialLinks();
 }
@@ -97,9 +97,9 @@ document.querySelectorAll('.accordion article button').forEach(button => button.
   document.querySelectorAll('.accordion article').forEach(article => {
     article.classList.remove('open');
     article.querySelector('button').setAttribute('aria-expanded', 'false');
-    article.querySelector('button i').textContent = '+';
+    article.querySelector('.accordion-icon').textContent = '+';
   });
-  if (!wasOpen) { item.classList.add('open'); button.setAttribute('aria-expanded', 'true'); button.querySelector('i').textContent = '−'; }
+  if (!wasOpen) { item.classList.add('open'); button.setAttribute('aria-expanded', 'true'); button.querySelector('.accordion-icon').textContent = '−'; }
 }));
 
 const testimonials = [
@@ -117,7 +117,7 @@ function showTestimonial(index) {
   quoteWrap.querySelector('.quote-author>span').textContent = item.initials;
   quoteWrap.querySelector('.quote-author b').textContent = translateValue(item.name);
   quoteWrap.querySelector('.quote-author small').textContent = translateValue(item.role);
-  quoteWrap.querySelector('.quote-nav i').style.width = `${((testimonialIndex + 1) / testimonials.length) * 100}%`;
+  quoteWrap.querySelector('.quote-progress').style.width = `${((testimonialIndex + 1) / testimonials.length) * 100}%`;
 }
 quoteButtons[0].addEventListener('click', () => showTestimonial(testimonialIndex - 1));
 quoteButtons[1].addEventListener('click', () => showTestimonial(testimonialIndex + 1));

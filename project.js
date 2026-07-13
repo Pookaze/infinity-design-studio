@@ -37,7 +37,7 @@ function renderProject() {
   document.querySelector('[data-back]').textContent = `← ${text.back}`;
   const next = document.querySelector('[data-next]');
   next.href = `../project-${nextId}/`;
-  next.querySelector('i').textContent = text.next;
+  next.querySelector('.button-label').textContent = text.next;
   document.querySelectorAll('.image-logo small').forEach(element => element.textContent = text.subtitle);
   document.querySelector('[data-rights]').textContent = `© 2026 INfinity Design Studio. ${text.rights}`;
   document.querySelector('.loader-meta small').textContent = text.archive;
