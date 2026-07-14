@@ -52,7 +52,7 @@ Object.assign(window.siteTranslations.zh, {
   'Strategic social media, posters, flyers, banners and menus that make every message stand out.':'以策略性的社交媒体、海报、宣传单、横幅与菜单设计，让每一条信息脱颖而出。',
   'Website Design':'网站设计',
   'Modern, responsive websites and landing pages designed for clarity, credibility and conversion.':'打造现代响应式网站与落地页，提升清晰度、可信度与转化表现。',
-  'View Services':'查看服务',
+  'Explore Category':'浏览类别',
   '01 / BRAND SYSTEMS':'01 / 品牌系统',
   '02 / CAMPAIGNS':'02 / 营销活动',
   '03 / DIGITAL':'03 / 数字体验'

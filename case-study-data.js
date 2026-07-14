@@ -2,13 +2,13 @@
   'use strict';
 
   const pair = (en, zh) => [en, zh];
-  const image = (src, en, zh) => ({ src, alt: pair(en, zh) });
+  const image = (src, en, zh, width = 900, height = 900) => ({ src, alt: pair(en, zh), width, height });
   const portfolio = (folder, names) => names.map((name, index) => image(
     `assets/images/portfolio/${folder}/project-${index + 1}.webp`,
     name[0], name[1]
   ));
   const website = (folder, heroAlt, extras) => [
-    image(`assets/images/projects/${folder}/hero.webp`, heroAlt[0], heroAlt[1]),
+    image(`assets/images/projects/${folder}/hero.webp`, heroAlt[0], heroAlt[1], 1536, 1024),
     ...extras.map((alt, index) => image(`assets/images/portfolio/website/project-${index + 1}.webp`, alt[0], alt[1]))
   ];
 
@@ -83,7 +83,7 @@
       colors: [['#0a0a0b', 'Night', '夜黑'], ['#d29a50', 'Signal Amber', '信号琥珀'], ['#f1efe9', 'Paper White', '纸白'], ['#315fd8', 'Digital Blue', '数码蓝']],
       type: pair('Condensed display typography drives impact while a neutral sans serif manages supporting campaign information.', '窄体展示字体负责视觉冲击，中性无衬线体承载辅助传播信息。'),
       deliverables: [pair('Three key visuals', '三款主视觉'), pair('Street formats', '街头广告尺寸'), pair('Digital crops', '数码裁切版本'), pair('Print masters', '印刷母版')],
-      images: [image('assets/images/projects/poster-design/usdt-fee-check-poster.webp', 'Fintech fee-check campaign poster', '金融科技手续费查询传播海报'), image('assets/images/projects/poster-design/amazon-shop-smarter-poster.webp', 'E-commerce product promotion poster', '电商产品推广海报'), image('assets/images/projects/poster-design/sunway-velocity-two-poster.webp', 'Property launch campaign poster', '地产项目上市传播海报')]
+      images: [image('assets/images/projects/poster-design/usdt-fee-check-poster.webp', 'Fintech fee-check campaign poster', '金融科技手续费查询传播海报', 1254, 1254), image('assets/images/projects/poster-design/amazon-shop-smarter-poster.webp', 'E-commerce product promotion poster', '电商产品推广海报', 1254, 1254), image('assets/images/projects/poster-design/sunway-velocity-two-poster.webp', 'Property launch campaign poster', '地产项目上市传播海报', 1280, 960)]
     },
     'flyer': {
       layout: 'editorial', accent: '#c5a05a', brand: 'Common Ground',
