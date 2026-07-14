@@ -256,6 +256,13 @@ body[data-page] {
   min-width: 210px;
   margin-top: 34px;
 }
+.continuous-project-header {
+  padding-bottom: clamp(75px, 9vw, 130px);
+}
+.continuous-project .poster-gallery-intro {
+  padding-top: clamp(75px, 9vw, 140px);
+  border-top: 1px solid var(--line);
+}
 .legal-copy { max-width: 820px; }
 .legal-copy section { margin-bottom: 50px; }
 .legal-copy h2 {

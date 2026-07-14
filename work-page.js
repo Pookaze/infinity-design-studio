@@ -20,6 +20,7 @@
   const projectsUrl = service => serviceUrl(service) + 'projects/';
   const serviceByKey = key => data.services[key];
   const allServices = Object.entries(data.services);
+  let pageObserver;
   const posterProject = {
     title: ['Commercial Poster Design Series', '商业海报设计系列'],
     description: [
@@ -27,9 +28,38 @@
       '一套涵盖金融科技、电商与房地产推广的三款海报，以清晰的信息层级与高冲击力视觉方向呈现。'
     ],
     category: ['Poster Design', '海报设计'],
-    coverAlt: [
-      'USDT fee-check promotional poster with a smartphone and TRON graphics',
-      '以手机与 TRON 视觉元素呈现的 USDT 手续费查询推广海报'
+    galleryTitle: ['Poster Gallery', '海报画廊'],
+    galleryIntro: [
+      'Three distinct visual systems, each tailored to its audience while sharing a crisp, high-impact commercial finish.',
+      '三套各具特色的视觉系统，分别针对不同受众，同时保持清晰、有冲击力的商业呈现。'
+    ],
+    meta: [
+      {label:['Category', '类别'], value:['Poster Design', '海报设计']},
+      {label:['Deliverables', '交付内容'], value:['3 Poster Designs', '3 款海报设计']},
+      {label:['Year', '年份'], value:['2026', '2026']}
+    ],
+    images: [
+      {
+        src:'assets/images/projects/poster-design/usdt-fee-check-poster.jpg',
+        width:1254,
+        height:1254,
+        alt:['USDT fee-check promotional poster with a smartphone and TRON graphics', '以手机与 TRON 视觉元素呈现的 USDT 手续费查询推广海报'],
+        caption:['Fintech fee-check campaign', '金融科技手续费查询推广']
+      },
+      {
+        src:'assets/images/projects/poster-design/amazon-shop-smarter-poster.jpg',
+        width:1254,
+        height:1254,
+        alt:['E-commerce promotional poster with parcels, shopping products and a mobile app', '以包裹、购物产品与手机应用呈现的电商推广海报'],
+        caption:['E-commerce promotion', '电商推广']
+      },
+      {
+        src:'assets/images/projects/poster-design/sunway-velocity-two-poster.jpg',
+        width:1280,
+        height:960,
+        alt:['Property launch poster featuring a Kuala Lumpur residential tower and city skyline', '以吉隆坡住宅大楼与城市天际线呈现的房地产项目海报'],
+        caption:['Property launch campaign', '房地产项目推广']
+      }
     ]
   };
 
@@ -100,7 +130,9 @@
     const pageTitle = `${pick(service.title)} ${t('projects')}`;
     const trail = [{label:t('home'),url:homeUrl},{label:t('work'),url:root+'work/'},{label:pick(category.title),url:categoryUrl(service.category)},{label:pick(service.title),url:serviceUrl(service)},{label:pageTitle}];
     if (serviceKey === 'poster') {
-      return hero(pageTitle, pick(service.description), trail, lang === 'zh' ? 'INFINITY / 项目' : 'INFINITY / PROJECTS') + `<section class="content-section project-listing"><article class="project-showcase-card"><a class="project-showcase-cover" href="${root}projects/project-4/" aria-label="${t('viewProject')}: ${pick(posterProject.title)}"><img src="${img('assets/images/projects/poster-design/usdt-fee-check-poster.jpg')}" width="1254" height="1254" alt="${pick(posterProject.coverAlt)}" decoding="async" fetchpriority="high"></a><div class="project-showcase-copy"><p class="inner-kicker">${pick(posterProject.category)}</p><h2>${pick(posterProject.title)}</h2><p>${pick(posterProject.description)}</p><div class="project-category"><span>${lang === 'zh' ? '类别' : 'Category'}</span><strong>${pick(posterProject.category)}</strong></div><a class="btn btn-gold project-showcase-action" href="${root}projects/project-4/"><b class="button-label">${t('viewProject')}</b><span>↗</span></a></div></article><a class="back-link" href="${serviceUrl(service)}">← ${t('backService')}</a></section>`;
+      const meta = posterProject.meta.map(item => `<div><span>${pick(item.label)}</span><strong>${pick(item.value)}</strong></div>`).join('');
+      const gallery = posterProject.images.map((image, index) => `<figure class="poster-gallery-item project-reveal${index === 0 ? ' poster-gallery-featured' : ''}" style="--reveal-index:${index + 2}"><div class="poster-image-frame" style="--poster-ratio:${image.width} / ${image.height}"><img src="${img(image.src)}" width="${image.width}" height="${image.height}" alt="${pick(image.alt)}" ${index === 0 ? 'fetchpriority="high"' : 'loading="lazy"'} decoding="async"></div><figcaption><span>0${index + 1}</span>${pick(image.caption)}</figcaption></figure>`).join('');
+      return hero(pageTitle, pick(service.description), trail, lang === 'zh' ? 'INFINITY / 项目' : 'INFINITY / PROJECTS') + `<section class="poster-gallery-section section continuous-projects"><article class="continuous-project"><header class="continuous-project-header project-reveal" style="--reveal-index:0"><p class="project-label">INFINITY / ${pick(posterProject.category).toUpperCase()}</p><h2 class="project-title">${pick(posterProject.title)}</h2><p class="project-description">${pick(posterProject.description)}</p><div class="project-meta">${meta}</div></header><div class="poster-gallery-intro project-reveal" style="--reveal-index:1"><p class="project-label">${lang === 'zh' ? '精选作品' : 'SELECTED WORK'}</p><h2>${pick(posterProject.galleryTitle)}</h2><p>${pick(posterProject.galleryIntro)}</p></div><div class="poster-gallery" aria-label="${pick(posterProject.galleryTitle)}">${gallery}</div></article><a class="back-link poster-back-link" href="${serviceUrl(service)}">← ${t('backService')}</a></section>`;
     }
     return hero(pageTitle, pick(service.description), trail, lang === 'zh' ? 'INFINITY / 项目' : 'INFINITY / PROJECTS') + `<section class="content-section"><div class="projects-empty" role="status"><h2>${t('comingTitle')}</h2><p>${t('comingBody')}</p></div><a class="back-link" href="${serviceUrl(service)}">← ${t('backService')}</a></section>`;
   }
@@ -180,6 +212,22 @@
       try { localStorage.setItem('infinity-language', lang); } catch (_) {}
       render();
     }));
+    if (pageObserver) pageObserver.disconnect();
+    const revealItems = body.querySelectorAll('.project-reveal');
+    if (revealItems.length) {
+      if (window.matchMedia('(prefers-reduced-motion: reduce)').matches || !('IntersectionObserver' in window)) {
+        revealItems.forEach(item => item.classList.add('is-visible'));
+      } else {
+        pageObserver = new IntersectionObserver(entries => {
+          entries.forEach(entry => {
+            if (!entry.isIntersecting) return;
+            entry.target.classList.add('is-visible');
+            pageObserver.unobserve(entry.target);
+          });
+        }, {rootMargin:'0px 0px -8% 0px', threshold:.08});
+        revealItems.forEach(item => pageObserver.observe(item));
+      }
+    }
     body.querySelector('.inner-loader')?.classList.add('loaded');
     restorePageScroll(false);
   }
