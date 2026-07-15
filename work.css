@@ -256,6 +256,16 @@ body[data-page] {
   min-width: 210px;
   margin-top: 34px;
 }
+.poster-project-list {
+  display: grid;
+  gap: clamp(55px, 7vw, 105px);
+}
+.poster-project-list .project-showcase-cover {
+  background: #130e09;
+}
+.poster-project-list + .back-link {
+  margin-top: clamp(42px, 6vw, 78px);
+}
 .continuous-project-header {
   padding-bottom: clamp(75px, 9vw, 130px);
 }

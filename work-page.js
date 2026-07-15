@@ -21,6 +21,10 @@
   const projectsUrl = service => serviceUrl(service) + 'projects/';
   const serviceByKey = key => data.services[key];
   const allServices = Object.entries(data.services);
+  const posterProjectRoutes = {
+    poster: 'projects/signal-three/',
+    'pizza-poster': 'projects/after-sams-pizza/'
+  };
   let pageObserver;
   function restorePageScroll(resetPosition) {
     const roots = [document.documentElement, body];
@@ -92,13 +96,16 @@
     const heroImage = study.images[0];
     const colors = study.colors.map(color => `<li><i style="--swatch:${color[0]}"></i><span>${color[lang === 'zh' ? 2 : 1]}</span><code>${color[0]}</code></li>`).join('');
     const typography = `<div class="study-type-sample"><span>Aa</span><div><strong>${lang === 'zh' ? '展示字体' : 'Display Typeface'}</strong><p>${pick(study.type)}</p></div></div><div class="study-type-sample"><span>Ag</span><div><strong>${lang === 'zh' ? '现代无衬线体' : 'Modern Sans Serif'}</strong><p>${lang === 'zh' ? '用于正文、说明与数字界面，确保各种尺寸下均清晰易读。' : 'Used for body copy, information and digital interfaces to remain clear at every size.'}</p></div></div>`;
-    const gallery = study.images.slice(1).map((image, index) => `<figure class="study-gallery-item project-reveal" style="--reveal-index:${index};--media-ratio:${image.width} / ${image.height}"><div class="study-image-frame"><img src="${img(image.src)}" width="${image.width}" height="${image.height}" alt="${pick(image.alt)}" loading="lazy" decoding="async"></div><figcaption><span>${String(index + 2).padStart(2, '0')}</span>${pick(image.alt)}</figcaption></figure>`).join('');
+    const galleryImages = study.galleryAll ? study.images : study.images.slice(1);
+    const galleryStart = study.galleryAll ? 1 : 2;
+    const gallery = galleryImages.map((image, index) => `<figure class="study-gallery-item project-reveal" style="--reveal-index:${index};--media-ratio:${image.width} / ${image.height}"><div class="study-image-frame"><img src="${img(image.src)}" width="${image.width}" height="${image.height}" alt="${pick(image.alt)}" loading="lazy" decoding="async"></div><figcaption><span>${String(index + galleryStart).padStart(2, '0')}</span>${pick(image.alt)}</figcaption></figure>`).join('');
+    const projectNote = study.note ? pick(study.note) : labels.fictional;
     const deliverables = study.deliverables.map((item, index) => `<li><span>${String(index + 1).padStart(2, '0')}</span>${pick(item)}</li>`).join('');
     return `<article class="case-study case-study-${study.layout}" style="--study-accent:${study.accent}">
       <header class="study-hero section">
         <div class="breadcrumbs">${trail.map((item,index) => index < trail.length - 1 ? `<a href="${item.url}">${item.label}</a><span>/</span>` : `<b>${item.label}</b>`).join('')}</div>
         <div class="study-hero-copy project-reveal"><p class="inner-kicker">INFINITY / ${labels.project}</p><h1>${pick(study.title)}</h1><p>${pick(study.overview)}</p><dl><div><dt>${labels.service}</dt><dd>${pick(service.title)}</dd></div><div><dt>${labels.client}</dt><dd>${study.brand}</dd></div><div><dt>${labels.year}</dt><dd>2026</dd></div></dl></div>
-        <figure class="study-cover project-reveal" style="--reveal-index:1;--media-ratio:${heroImage.width} / ${heroImage.height}"><img src="${img(heroImage.src)}" width="${heroImage.width}" height="${heroImage.height}" alt="${pick(heroImage.alt)}" fetchpriority="high" decoding="async"><figcaption>${pick(heroImage.alt)} · ${labels.fictional}</figcaption></figure>
+        <figure class="study-cover project-reveal" style="--reveal-index:1;--media-ratio:${heroImage.width} / ${heroImage.height}"><img src="${img(heroImage.src)}" width="${heroImage.width}" height="${heroImage.height}" alt="${pick(heroImage.alt)}" fetchpriority="high" decoding="async"><figcaption>${pick(heroImage.alt)} · ${projectNote}</figcaption></figure>
       </header>
       <section class="study-section study-intro section"><div>${sectionMarker(labels.overview, 1)}<h2>${labels.overview}</h2><p>${pick(study.overview)}</p></div><aside><span>${labels.client}</span><p>${pick(study.client)}</p></aside></section>
       <section class="study-section study-showcase section"><div class="study-section-heading">${sectionMarker(labels.gallery, 2)}<h2>${labels.gallery}</h2></div><div class="study-gallery">${gallery}</div></section>
@@ -107,14 +114,39 @@
     </article>`;
   }
 
+  function posterProjectsPage(service, category) {
+    const labels = lang === 'zh'
+      ? {title:'海报设计项目', intro:'探索完整的商业海报项目，每个项目均提供独立案例页面与完整作品展示。', category:'类别', back:'返回服务类别'}
+      : {title:'Poster Design Projects', intro:'Explore complete commercial poster projects, each with a dedicated case-study page and full artwork presentation.', category:'Category', back:'Back to Service Category'};
+    const trail = [{label:t('home'),url:homeUrl},{label:t('work'),url:root+'work/'},{label:pick(category.title),url:categoryUrl(service.category)},{label:labels.title}];
+    const cards = ['poster', 'pizza-poster'].map((studyKey, index) => {
+      const study = caseStudies[studyKey];
+      const cover = study.images[0];
+      const href = root + posterProjectRoutes[studyKey];
+      return `<article class="project-showcase-card project-reveal" style="--reveal-index:${index}"><a class="project-showcase-cover" href="${href}" aria-label="${t('viewProject')}: ${pick(study.title)}"><img src="${img(cover.src)}" width="${cover.width}" height="${cover.height}" alt="${pick(cover.alt)}" ${index === 0 ? 'fetchpriority="high"' : 'loading="lazy"'} decoding="async"></a><div class="project-showcase-copy"><p class="inner-kicker">${pick(service.title)}</p><h2>${pick(study.title)}</h2><p>${pick(study.overview)}</p><div class="project-category"><span>${labels.category}</span><strong>${pick(service.title)}</strong></div><a class="btn btn-gold project-showcase-action" href="${href}"><b class="button-label">${t('viewProject')}</b><span>↗</span></a></div></article>`;
+    }).join('');
+    return hero(labels.title, labels.intro, trail, lang === 'zh' ? 'INFINITY / 项目' : 'INFINITY / PROJECTS') + `<section class="content-section project-listing"><div class="poster-project-list">${cards}</div><a class="back-link" href="${categoryUrl(service.category)}">← ${labels.back}</a></section>`;
+  }
+
   function projectsPage(serviceKey) {
     const service = serviceByKey(serviceKey);
     if (!service) return notFound();
     const category = data.categories[service.category];
+    if (serviceKey === 'poster') return posterProjectsPage(service, category);
     const study = caseStudies[serviceKey];
     const pageTitle = study ? pick(study.title) : `${pick(service.title)} ${t('projects')}`;
     const trail = [{label:t('home'),url:homeUrl},{label:t('work'),url:root+'work/'},{label:pick(category.title),url:categoryUrl(service.category)},{label:pageTitle}];
     return renderCaseStudy(serviceKey, service, trail);
+  }
+
+  function projectDetailPage(projectKey) {
+    const service = serviceByKey('poster');
+    const category = data.categories[service.category];
+    const study = caseStudies[projectKey];
+    if (!study || !posterProjectRoutes[projectKey]) return notFound();
+    const projectsLabel = lang === 'zh' ? '海报设计项目' : 'Poster Design Projects';
+    const trail = [{label:t('home'),url:homeUrl},{label:t('work'),url:root+'work/'},{label:pick(category.title),url:categoryUrl(service.category)},{label:projectsLabel,url:projectsUrl(service)},{label:pick(study.title)}];
+    return renderCaseStudy(projectKey, service, trail);
   }
 
   function caseStudyPage() {
@@ -169,6 +201,7 @@
     if (pageType === 'work') main = workPage();
     else if (pageType === 'category') main = categoryPage(pageKey);
     else if (pageType === 'projects') main = projectsPage(pageKey);
+    else if (pageType === 'project-detail') main = projectDetailPage(pageKey);
     else if (pageType === 'case-study') main = caseStudyPage();
     else if (pageType === 'legal') main = legalPage(pageKey);
     else main = notFound();
