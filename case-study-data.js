@@ -83,21 +83,7 @@
       colors: [['#0a0a0b', 'Night', '夜黑'], ['#d29a50', 'Signal Amber', '信号琥珀'], ['#f1efe9', 'Paper White', '纸白'], ['#315fd8', 'Digital Blue', '数码蓝']],
       type: pair('Condensed display typography drives impact while a neutral sans serif manages supporting campaign information.', '窄体展示字体负责视觉冲击，中性无衬线体承载辅助传播信息。'),
       deliverables: [pair('Three key visuals', '三款主视觉'), pair('Street formats', '街头广告尺寸'), pair('Digital crops', '数码裁切版本'), pair('Print masters', '印刷母版')],
-      images: [image('assets/images/projects/poster-design/usdt-fee-check-poster.webp', 'Fintech fee-check campaign poster', '金融科技手续费查询传播海报', 1254, 1254), image('assets/images/projects/poster-design/amazon-shop-smarter-poster.webp', 'E-commerce product promotion poster', '电商产品推广海报', 1254, 1254), image('assets/images/projects/poster-design/sunway-velocity-two-poster.webp', 'Property launch campaign poster', '地产项目上市传播海报', 1280, 960)]
-    },
-    'pizza-poster': {
-      layout: 'mosaic', accent: '#f0a51f', brand: "After Sam's",
-      title: pair("After Sam's — Pizza Promotion Poster", "After Sam's —— 披萨促销海报"),
-      overview: pair('A vibrant food-promotion poster that makes the 30% offer, delivery details and order action instantly clear.', '一款充满活力的餐饮促销海报，让七折优惠、配送信息与订购行动一目了然。'),
-      client: pair("After Sam's is a pizza delivery concept using bold appetite appeal and direct-response messaging to turn attention into orders.", "After Sam's 是一个披萨配送概念品牌，以强烈的食欲视觉与直接回应式信息，将关注转化为订单。"),
-      note: pair('Poster design project', '海报设计项目'),
-      galleryAll: true,
-      objectives: [pair('Make the promotional offer immediately visible.', '让促销优惠立即可见。'), pair('Build strong appetite appeal around the hero product.', '围绕主打产品营造强烈食欲感。'), pair('Keep ordering and delivery information easy to scan.', '确保订购与配送信息易于浏览。')],
-      process: [pair('Offer hierarchy', '优惠信息层级'), pair('Food image direction', '美食影像方向'), pair('Typography refinement', '字体层级优化'), pair('Production preparation', '制作文件准备')],
-      colors: [['#f0a51f', 'Pizza Gold', '披萨金'], ['#170d07', 'Oven Black', '烤炉黑'], ['#ffffff', 'Fresh White', '清新白'], ['#d42124', 'Chilli Red', '辣椒红']],
-      type: pair('Oversized condensed lettering creates immediate impact, supported by bold sans serif information blocks for the offer and ordering details.', '超大窄体字建立即时冲击力，并以粗体无衬线信息区块呈现优惠与订购详情。'),
-      deliverables: [pair('Promotional poster', '促销海报'), pair('Social media master', '社交媒体主视觉'), pair('Print-ready artwork', '印刷就绪文件'), pair('Campaign visual system', '传播视觉系统')],
-      images: [image('assets/images/projects/poster-design/after-sams-pizza-poster.jpg', "After Sam's pizza promotion poster with a 30 percent discount offer", "After Sam's 披萨促销海报，展示七折优惠", 1448, 1086)]
+      images: [image('assets/images/projects/poster-design/usdt-fee-check-poster.webp', 'Fintech fee-check campaign poster', '金融科技手续费查询传播海报', 1254, 1254), image('assets/images/projects/poster-design/amazon-shop-smarter-poster.webp', 'E-commerce product promotion poster', '电商产品推广海报', 1254, 1254), image('assets/images/projects/poster-design/sunway-velocity-two-poster.webp', 'Property launch campaign poster', '地产项目上市传播海报', 1280, 960), image('assets/images/projects/poster-design/after-sams-pizza-poster.jpg', "After Sam's pizza promotion poster with a 30 percent discount offer", "After Sam's 披萨促销海报，展示七折优惠", 1448, 1086)]
     },
     'flyer': {
       layout: 'editorial', accent: '#c5a05a', brand: 'Common Ground',
