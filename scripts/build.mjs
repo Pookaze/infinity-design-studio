@@ -40,6 +40,17 @@ await build({
   format: 'esm'
 });
 
+await build({
+  absWorkingDir: root,
+  entryPoints: [join(root, 'admin', 'reset-owner', 'reset.js')],
+  outfile: join(out, 'admin', 'reset-owner', 'reset.js'),
+  bundle: true,
+  minify: true,
+  sourcemap: false,
+  target: ['es2020'],
+  format: 'esm'
+});
+
 const manifestContext = { window:{} };
 vm.createContext(manifestContext);
 vm.runInContext(await readFile(join(root, 'work-data.js'), 'utf8'), manifestContext);
