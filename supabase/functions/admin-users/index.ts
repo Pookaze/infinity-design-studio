@@ -19,17 +19,21 @@ Deno.serve(async request=>{
   if(request.method==='OPTIONS')return new Response(null,{status:204,headers:corsHeaders(request)});
   if(request.method!=='POST')return json(request,{error:'Method not allowed'},405);
 
+  try {
+
   const authorization=request.headers.get('authorization')||'';
   if(!authorization.startsWith('Bearer '))return json(request,{error:'Unauthorized'},401);
   let secretKey='';
   try{secretKey=JSON.parse(Deno.env.get('SUPABASE_SECRET_KEYS')||'{}').default||'';}catch{secretKey='';}
   secretKey=secretKey||Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')||'';
   const supabaseUrl=Deno.env.get('SUPABASE_URL')||'';
-  const anonKey=Deno.env.get('SUPABASE_ANON_KEY')||'';
-  if(!secretKey||!supabaseUrl||!anonKey)return json(request,{error:'Administrator service unavailable'},500);
+  let publishableKey='';
+  try{publishableKey=JSON.parse(Deno.env.get('SUPABASE_PUBLISHABLE_KEYS')||'{}').default||'';}catch{publishableKey='';}
+  publishableKey=publishableKey||Deno.env.get('SUPABASE_ANON_KEY')||'';
+  if(!secretKey||!supabaseUrl||!publishableKey)return json(request,{error:'Administrator service unavailable'},500);
 
   const adminHeaders={apikey:secretKey,'Content-Type':'application/json'};
-  const userResponse=await fetch(`${supabaseUrl}/auth/v1/user`,{headers:{apikey:anonKey,Authorization:authorization}});
+  const userResponse=await fetch(`${supabaseUrl}/auth/v1/user`,{headers:{apikey:publishableKey,Authorization:authorization}});
   if(!userResponse.ok)return json(request,{error:'Unauthorized'},401);
   const caller=await userResponse.json() as {id:string,email?:string};
   const profileResponse=await fetch(`${supabaseUrl}/rest/v1/admin_users?user_id=eq.${caller.id}&select=*`,{headers:adminHeaders});
@@ -50,6 +54,21 @@ Deno.serve(async request=>{
   }
 
   if(callerProfile.role!=='owner')return json(request,{error:'Owner access required'},403);
+
+  const sensitiveLimits:Record<string,number>={create:10,update:30,'reset-password':5,delete:5};
+  if(action in sensitiveLimits){
+    const rateResponse=await fetch(`${supabaseUrl}/rest/v1/rpc/take_admin_action_slot`,{method:'POST',headers:adminHeaders,body:JSON.stringify({p_actor_id:caller.id,p_action:action,p_limit:sensitiveLimits[action],p_window_seconds:900})});
+    const allowed=rateResponse.ok&&await rateResponse.json()===true;
+    if(!allowed)return json(request,{error:'Too many sensitive account actions. Try again later.'},429);
+  }
+  const recordAction=async(actionName:string,targetId:string|null,metadata:Record<string,unknown>={})=>{
+    await fetch(`${supabaseUrl}/rest/v1/activity_logs`,{method:'POST',headers:{...adminHeaders,Prefer:'return=minimal'},body:JSON.stringify({actor_id:caller.id,action:actionName,entity_table:'admin_users',entity_id:targetId,metadata})});
+  };
+  const reauthenticateOwner=async(password:string)=>{
+    if(!password)return false;
+    const response=await fetch(`${supabaseUrl}/auth/v1/token?grant_type=password`,{method:'POST',headers:{apikey:publishableKey,'Content-Type':'application/json'},body:JSON.stringify({email:caller.email,password})});
+    return response.ok;
+  };
 
   if(action==='list'){
     const [allProfilesResponse,authUsersResponse,logsResponse]=await Promise.all([
@@ -74,13 +93,20 @@ Deno.serve(async request=>{
     const displayName=String(body.displayName||'').trim().slice(0,80);
     const password=String(body.password||'');
     const role=body.role==='owner'?'owner':'editor';
+    const isActive=body.isActive!==false;
     if(!validUsername(username)||!validEmail(email)||!displayName||!strongPassword(password))return json(request,{error:'Valid username, email, display name and strong password are required'},422);
-    const createResponse=await fetch(`${supabaseUrl}/auth/v1/admin/users`,{method:'POST',headers:adminHeaders,body:JSON.stringify({email,password,email_confirm:true,user_metadata:{display_name:displayName,username}})});
+    const [usernameCheck,emailCheck]=await Promise.all([
+      fetch(`${supabaseUrl}/rest/v1/admin_users?username=eq.${encodeURIComponent(username)}&select=user_id`,{headers:adminHeaders}),
+      fetch(`${supabaseUrl}/rest/v1/admin_users?email=eq.${encodeURIComponent(email)}&select=user_id`,{headers:adminHeaders})
+    ]);
+    if((await usernameCheck.json()).length||(await emailCheck.json()).length)return json(request,{error:'Username or email is already in use'},409);
+    const createResponse=await fetch(`${supabaseUrl}/auth/v1/admin/users`,{method:'POST',headers:adminHeaders,body:JSON.stringify({email,password,email_confirm:true,...(isActive?{}:{ban_duration:'876000h'}),user_metadata:{display_name:displayName,username}})});
     const created=await createResponse.json() as {id?:string,user?:{id:string},message?:string};
     const userId=created.user?.id||created.id;
     if(!createResponse.ok||!userId)return json(request,{error:created.message||'Unable to create administrator'},400);
-    const saveResponse=await fetch(`${supabaseUrl}/rest/v1/admin_users`,{method:'POST',headers:{...adminHeaders,Prefer:'return=minimal'},body:JSON.stringify({user_id:userId,username,email,display_name:displayName,role})});
+    const saveResponse=await fetch(`${supabaseUrl}/rest/v1/admin_users`,{method:'POST',headers:{...adminHeaders,Prefer:'return=minimal'},body:JSON.stringify({user_id:userId,username,email,display_name:displayName,role,is_active:isActive})});
     if(!saveResponse.ok){await fetch(`${supabaseUrl}/auth/v1/admin/users/${userId}`,{method:'DELETE',headers:adminHeaders});return json(request,{error:'Unable to create administrator profile'},500);}
+    await recordAction('admin_created',userId,{username,email,role,is_active:isActive});
     return json(request,{ok:true,userId},201);
   }
 
@@ -94,32 +120,55 @@ Deno.serve(async request=>{
 
   if(action==='reset-password'){
     if(protectedOwner&&caller.id!==userId)return json(request,{error:'Only Owner can change their own password'},403);
+    if(userId!==caller.id&&!await reauthenticateOwner(String(body.ownerPassword||''))){await recordAction('admin_reauthentication_failed',userId,{operation:'reset-password'});return json(request,{error:'Owner password confirmation failed'},401);}
     const password=String(body.password||'');
     if(!strongPassword(password))return json(request,{error:'Use at least 12 characters with uppercase, lowercase and a number'},422);
     const response=await fetch(`${supabaseUrl}/auth/v1/admin/users/${userId}`,{method:'PUT',headers:adminHeaders,body:JSON.stringify({password})});
-    return response.ok?json(request,{ok:true}):json(request,{error:'Unable to reset password'},400);
+    if(!response.ok)return json(request,{error:'Unable to reset password'},400);
+    await recordAction('admin_password_reset',userId,{username:target.username});
+    return json(request,{ok:true});
   }
 
   if(action==='update'){
+    const username=protectedOwner?'owner':String(body.username||target.username||'').trim().toLowerCase();
     const displayName=String(body.displayName||target.display_name||'').trim().slice(0,80);
     const email=String(body.email||target.email||'').trim().toLowerCase();
-    if(!displayName||!validEmail(email))return json(request,{error:'Valid display name and email required'},422);
+    if(!validUsername(username)||!displayName||!validEmail(email))return json(request,{error:'Valid username, display name and email required'},422);
     if(protectedOwner&&caller.id!==userId)return json(request,{error:'Owner information is protected'},403);
     const role=protectedOwner?'owner':body.role==='owner'?'owner':'editor';
     const isActive=protectedOwner?true:body.isActive!==false;
+    const [usernameCheck,emailCheck]=await Promise.all([
+      fetch(`${supabaseUrl}/rest/v1/admin_users?username=eq.${encodeURIComponent(username)}&user_id=neq.${userId}&select=user_id`,{headers:adminHeaders}),
+      fetch(`${supabaseUrl}/rest/v1/admin_users?email=eq.${encodeURIComponent(email)}&user_id=neq.${userId}&select=user_id`,{headers:adminHeaders})
+    ]);
+    if((await usernameCheck.json()).length||(await emailCheck.json()).length)return json(request,{error:'Username or email is already in use'},409);
     if(email!==target.email){
       const authUpdate=await fetch(`${supabaseUrl}/auth/v1/admin/users/${userId}`,{method:'PUT',headers:adminHeaders,body:JSON.stringify({email,email_confirm:true})});
       if(!authUpdate.ok)return json(request,{error:'Unable to update login email'},400);
     }
-    const updateResponse=await fetch(`${supabaseUrl}/rest/v1/admin_users?user_id=eq.${userId}`,{method:'PATCH',headers:{...adminHeaders,Prefer:'return=minimal'},body:JSON.stringify({display_name:displayName,email,role,is_active:isActive})});
-    return updateResponse.ok?json(request,{ok:true}):json(request,{error:'Unable to update administrator'},400);
+    if(isActive!==target.is_active){
+      const authStatusUpdate=await fetch(`${supabaseUrl}/auth/v1/admin/users/${userId}`,{method:'PUT',headers:adminHeaders,body:JSON.stringify({ban_duration:isActive?'none':'876000h'})});
+      if(!authStatusUpdate.ok)return json(request,{error:'Unable to update account status'},400);
+    }
+    const updateResponse=await fetch(`${supabaseUrl}/rest/v1/admin_users?user_id=eq.${userId}`,{method:'PATCH',headers:{...adminHeaders,Prefer:'return=minimal'},body:JSON.stringify({username,display_name:displayName,email,role,is_active:isActive})});
+    if(!updateResponse.ok)return json(request,{error:'Unable to update administrator'},400);
+    const updateAction=isActive!==target.is_active?(isActive?'admin_enabled':'admin_disabled'):'admin_updated';
+    await recordAction(updateAction,userId,{username,email,role,is_active:isActive});
+    return json(request,{ok:true});
   }
 
   if(action==='delete'){
     if(protectedOwner)return json(request,{error:'Owner cannot be deleted'},409);
+    if(!await reauthenticateOwner(String(body.ownerPassword||''))){await recordAction('admin_reauthentication_failed',userId,{operation:'delete'});return json(request,{error:'Owner password confirmation failed'},401);}
     const deleteResponse=await fetch(`${supabaseUrl}/auth/v1/admin/users/${userId}`,{method:'DELETE',headers:adminHeaders});
-    return deleteResponse.ok?json(request,{ok:true}):json(request,{error:'Unable to delete administrator'},400);
+    if(!deleteResponse.ok)return json(request,{error:'Unable to delete administrator'},400);
+    await recordAction('admin_deleted',null,{deleted_user_id:userId,username:target.username,email:target.email});
+    return json(request,{ok:true});
   }
 
   return json(request,{error:'Unsupported action'},400);
+  } catch(error) {
+    console.error('admin-users-runtime',error);
+    return json(request,{error:'Administrator service encountered a server error'},500);
+  }
 });
