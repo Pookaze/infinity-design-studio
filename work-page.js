@@ -39,6 +39,7 @@
   async function cmsRequest(path, config) {
     const response = await fetch(`${config.supabaseUrl}/rest/v1/${path}`, {
       headers: { apikey:config.supabaseAnonKey, Authorization:`Bearer ${config.supabaseAnonKey}` },
+      cache: 'no-store',
       signal: AbortSignal.timeout ? AbortSignal.timeout(5000) : undefined
     });
     if (!response.ok) throw new Error(`CMS request failed (${response.status})`);

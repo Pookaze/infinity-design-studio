@@ -4,7 +4,7 @@
   if (!/^https:\/\/.+\.supabase\.co$/.test(config.supabaseUrl || '') || !config.supabaseAnonKey) return;
   const headers = { apikey:config.supabaseAnonKey, Authorization:`Bearer ${config.supabaseAnonKey}` };
   const request = async path => {
-    const response = await fetch(`${config.supabaseUrl}/rest/v1/${path}`, { headers });
+    const response = await fetch(`${config.supabaseUrl}/rest/v1/${path}`, { headers, cache:'no-store' });
     if (!response.ok) throw new Error(`CMS ${response.status}`);
     return response.json();
   };
@@ -28,9 +28,15 @@
       const heading = element.querySelector('h1,h2,h3');
       const paragraph = element.querySelector('p');
       const title = section[`title_${lang}`];
-      const body = section[`content_${lang}`]?.text;
+      const sectionContent = section[`content_${lang}`] || {};
+      const body = sectionContent.text;
       if (heading && title) heading.textContent = title;
       if (paragraph && body) paragraph.textContent = body;
+      const image = element.querySelector('img');
+      if (image && sectionContent.image_url) {
+        image.src = sectionContent.image_url;
+        image.removeAttribute('srcset');
+      }
       const layout = section.layout || {};
       if (layout.textAlign && ['left','center','right'].includes(layout.textAlign)) element.style.textAlign = layout.textAlign;
       if (Number.isFinite(layout.paddingTop)) element.style.paddingTop = `${Math.max(0,Math.min(240,layout.paddingTop))}px`;
@@ -53,11 +59,15 @@
     }
   }
   Promise.all([
-    request('pages?select=*&slug=eq.home&status=eq.published&deleted_at=is.null&limit=1'),
-    request('page_sections?select=*&is_visible=eq.true&pages!inner(slug,status)&pages.slug=eq.home&pages.status=eq.published&order=sort_order'),
+    request('pages?select=*&slug=in.(home,about,services,work,contact)&status=eq.published&deleted_at=is.null'),
+    request('page_sections?select=*,pages!inner(slug,status)&is_visible=eq.true&pages.status=eq.published&order=sort_order'),
     request('navigation_items?select=*&is_visible=eq.true&order=sort_order'),
     request('site_settings?select=*&limit=1'), request('theme_settings?select=*&limit=1')
-  ]).then(([pages,sections,navigation,settings,themes]) => { content={page:pages[0],sections,navigation,settings:settings[0],theme:themes[0]};apply(); })
+  ]).then(([pages,sections,navigation,settings,themes]) => {
+    const preferred={home:'home',about:'about',services:'services',portfolio:'work',contact:'contact'};
+    const liveSections=sections.filter(section=>preferred[section.section_key]?section.pages?.slug===preferred[section.section_key]:section.pages?.slug==='home');
+    content={page:pages.find(page=>page.slug==='home'),sections:liveSections,navigation,settings:settings[0],theme:themes[0]};apply();
+  })
     .catch(error => console.warn('CMS unavailable; static home content remains active.',error));
   new MutationObserver(apply).observe(document.documentElement,{attributes:true,attributeFilter:['lang']});
 })();
