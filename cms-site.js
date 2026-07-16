@@ -12,9 +12,18 @@
     try { return localStorage.getItem('infinity-language') === 'zh' ? 'zh' : 'en'; } catch (_) { return 'en'; }
   };
   const displayText = (value,lang) => {
-    const text=String(value??'');
-    if(lang!=='zh'||!/[\u00c2-\u00f4]/.test(text))return text;
-    try{return decodeURIComponent(escape(text));}catch(_){return text;}
+    let text=String(value??'');
+    if(lang!=='zh')return text;
+    const windowsBytes={8364:128,8218:130,402:131,8222:132,8230:133,8224:134,8225:135,710:136,8240:137,352:138,8249:139,338:140,381:142,8216:145,8217:146,8220:147,8221:148,8226:149,8211:150,8212:151,732:152,8482:153,353:154,8250:155,339:156,382:158,376:159};
+    for(let pass=0;pass<3&&/[\u00c2-\u00f4]/.test(text);pass+=1){
+      try{
+        const bytes=[];
+        for(const character of text){const code=character.charCodeAt(0),byte=code<=255?code:windowsBytes[code];if(byte===undefined)return text;bytes.push(byte);}
+        const decoded=new TextDecoder('utf-8',{fatal:true}).decode(Uint8Array.from(bytes));
+        if(decoded===text)break;text=decoded;
+      }catch(_){break;}
+    }
+    return text;
   };
   let content = null;
   const safeLink = value => {
