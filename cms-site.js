@@ -11,6 +11,11 @@
   const language = () => {
     try { return localStorage.getItem('infinity-language') === 'zh' ? 'zh' : 'en'; } catch (_) { return 'en'; }
   };
+  const displayText = (value,lang) => {
+    const text=String(value??'');
+    if(lang!=='zh'||!/[\u00c2-\u00f4]/.test(text))return text;
+    try{return decodeURIComponent(escape(text));}catch(_){return text;}
+  };
   let content = null;
   const safeLink = value => {
     const link=String(value||'').trim();
@@ -34,10 +39,10 @@
   function applySection(section,lang) {
     const element=sectionElement(section);if(!element)return;element.hidden=!section.is_visible;
     const sectionContent=section.content||section[`content_${lang}`]||{},fields=sectionContent.fields;
-    if(fields&&typeof fields==='object')Object.entries(fields).forEach(([key,value])=>{const target=element.querySelector(`[data-cms-field="${CSS.escape(key)}"]`);if(!target)return;const attribute=target.dataset.cmsAttr;if(attribute==='href')target.setAttribute('href',safeLink(value));else if(attribute==='src')target.setAttribute('src',String(value||''));else target.textContent=String(value??'')});
+    if(fields&&typeof fields==='object')Object.entries(fields).forEach(([key,value])=>{const target=element.querySelector(`[data-cms-field="${CSS.escape(key)}"]`);if(!target)return;const attribute=target.dataset.cmsAttr;if(attribute==='href')target.setAttribute('href',safeLink(value));else if(attribute==='src')target.setAttribute('src',String(value||''));else target.textContent=displayText(value,lang)});
     else {
       const heading=element.querySelector('h1,h2,h3'),paragraph=element.querySelector('p'),title=section[`title_${lang}`],body=sectionContent.text;
-      if(heading&&title)heading.textContent=title;if(paragraph&&body)paragraph.textContent=body;
+      if(heading&&title)heading.textContent=displayText(title,lang);if(paragraph&&body)paragraph.textContent=displayText(body,lang);
     }
     const image=element.querySelector('img');if(image&&sectionContent.image_url){image.src=sectionContent.image_url;image.removeAttribute('srcset')}
     const layout=section.layout||{};if(layout.textAlign&&['left','center','right'].includes(layout.textAlign))element.style.textAlign=layout.textAlign;if(Number.isFinite(layout.paddingTop))element.style.paddingTop=`${Math.max(0,Math.min(240,layout.paddingTop))}px`;if(Number.isFinite(layout.paddingBottom))element.style.paddingBottom=`${Math.max(0,Math.min(240,layout.paddingBottom))}px`;
@@ -50,17 +55,17 @@
     const lang = language();
     const page = content.page;
     if (page) {
-      document.title = `${page[`title_${lang}`]} — INfinity Design Studio`;
+      document.title = `${displayText(page[`title_${lang}`],lang)} — INfinity Design Studio`;
       const description = document.querySelector('meta[name="description"]');
-      if (description && page[`description_${lang}`]) description.content = page[`description_${lang}`];
+      if (description && page[`description_${lang}`]) description.content = displayText(page[`description_${lang}`],lang);
     }
     if(content.sections.some(section=>section[`content_${lang}`]?.fields))reorderSections(content.sections,lang);else content.sections.forEach(section=>applySection(section,lang));
     content.navigation.forEach(item => {
       const link = [...document.querySelectorAll('header nav a')].find(node => node.getAttribute('href') === item.url || new URL(node.href,location.href).pathname === item.url);
-      if (link) { link.textContent = item[`label_${lang}`]; link.hidden = !item.is_visible || (innerWidth < 821 && !item.mobile_visible); }
+      if (link) { link.textContent = displayText(item[`label_${lang}`],lang); link.hidden = !item.is_visible || (innerWidth < 821 && !item.mobile_visible); }
     });
     if (content.settings) {
-      document.querySelectorAll('footer>p').forEach(node => node.textContent = content.settings[`copyright_${lang}`] || node.textContent);
+      document.querySelectorAll('footer>p').forEach(node => node.textContent = content.settings[`copyright_${lang}`] ? displayText(content.settings[`copyright_${lang}`],lang) : node.textContent);
       const email = document.querySelector('a[href^="mailto:"]');
       if (email && content.settings.contact_email) email.href = `mailto:${content.settings.contact_email}`;
       const whatsapp = document.querySelector('.whatsapp-link');
