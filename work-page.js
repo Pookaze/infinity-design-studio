@@ -61,7 +61,7 @@
       if (!/^https:\/\/.+\.supabase\.co$/.test(config.supabaseUrl || '') || !config.supabaseAnonKey) return;
       const [categories, services, themes] = await Promise.all([
         cmsRequest('service_categories?select=slug,title_en,title_zh,description_en,description_zh,sort_order&is_visible=eq.true&order=sort_order',config),
-        cmsRequest('services?select=slug,title_en,title_zh,description_en,description_zh,project_url,sort_order,service_categories!inner(slug)&status=eq.published&is_visible=eq.true&deleted_at=is.null&order=sort_order',config),
+        cmsRequest('services?select=slug,title_en,title_zh,description_en,description_zh,price_en,price_zh,included_items_en,included_items_zh,turnaround_en,turnaround_zh,project_url,sort_order,service_categories!inner(slug)&status=eq.published&is_visible=eq.true&deleted_at=is.null&order=sort_order',config),
         cmsRequest('theme_settings?select=colors,fonts&limit=1',config)
       ]);
       applyCmsTheme(themes[0]);
@@ -74,9 +74,17 @@
         services.forEach(service => {
           const category = service.service_categories.slug;
           const fallback = data.services[service.slug] || {};
-          next.services[service.slug] = { category, title:[service.title_en,service.title_zh], description:[service.description_en || fallback.description?.[0] || '',service.description_zh || fallback.description?.[1] || ''], includes:fallback.includes || [], projectUrl:service.project_url };
+          const includedEn = service.included_items_en?.length ? service.included_items_en : (fallback.includes || []).map(item => item[0]);
+          const includedZh = service.included_items_zh?.length ? service.included_items_zh : (fallback.includes || []).map(item => item[1]);
+          next.services[service.slug] = { category, title:[service.title_en,service.title_zh], description:[service.description_en || fallback.description?.[0] || '',service.description_zh || fallback.description?.[1] || ''], price:[service.price_en || 'Contact for quotation',service.price_zh || '联系获取报价'], includes:includedEn.map((item,index)=>[item,includedZh[index]||item]), turnaround:[service.turnaround_en||'',service.turnaround_zh||''], projectUrl:service.project_url };
           next.categories[category]?.services.push(service.slug);
         });
+        const canonical = {
+          'branding-identity':['logo-design','brand-identity','business-card','packaging'],
+          'marketing-design':['social-media','poster','flyer','banner','menu'],
+          'website-design':['business-website','landing-page','portfolio-website','restaurant-website','responsive-design','basic-seo']
+        };
+        Object.entries(canonical).forEach(([category,order]) => next.categories[category] && next.categories[category].services.sort((a,b) => order.indexOf(a)-order.indexOf(b)));
         data = next;
       }
       if (pageType === 'projects' && pageKey) {
@@ -92,8 +100,8 @@
             title:[project.title_en,project.title_zh], brand:project.client_en||project.title_en, accent:'#d6ad60', layout:'editorial',
             overview:[overview.content_en?.text||project.short_description_en,overview.content_zh?.text||project.short_description_zh],
             client:[project.client_en,project.client_zh], images,
-            colors:system.content_en?.colors||[['#0a0a0a','Black','黑色'],['#d6ad60','Gold','金色'],['#f4f1ea','Ivory','象牙白']],
-            type:[system.content_en?.typography||'Premium display and sans-serif system',system.content_zh?.typography||'高端展示字体与无衬线字体系统'],
+            colors:system.content_en?.colors||[],
+            type:[system.content_en?.typography||'',system.content_zh?.typography||''],
             deliverables:(deliverables.content_en?.items||project.services_en||[]).map((item,index)=>[item,(deliverables.content_zh?.items||project.services_zh||[])[index]||item])
           }};
         }
@@ -116,7 +124,7 @@
     return `<header class="header scrolled">
       <a class="logo image-logo" href="${homeUrl}#home" aria-label="INfinity Design Studio home"><img class="brand-mark" src="${img('assets/images/brand/infinity-logo.png')}" width="640" height="314" alt=""><span><b>INfinity Design Studio</b><small>${lang === 'zh' ? '高端平面设计' : 'PREMIUM GRAPHIC DESIGN'}</small></span></a>
       <button class="menu-toggle" type="button" aria-label="Open navigation" aria-expanded="false"><span></span><span></span></button>
-      <nav class="nav" aria-label="Main navigation"><a href="${homeUrl}#home">${t('home')}</a><a href="${homeUrl}#about">${t('about')}</a><a href="${root}work/">${t('services')}</a><a href="${homeUrl}#portfolio">${t('work')}</a><div class="language-switcher" role="group" aria-label="Language"><button class="${lang === 'en' ? 'active' : ''}" type="button" data-lang="en">English</button><span>/</span><button class="${lang === 'zh' ? 'active' : ''}" type="button" data-lang="zh">中文（简体）</button></div><a href="${homeUrl}#contact" class="nav-cta">${t('start')} <span>↗</span></a></nav>
+      <nav class="nav" aria-label="Main navigation"><a href="${homeUrl}#home">${t('home')}</a><a href="${homeUrl}#about">${t('about')}</a><a href="${homeUrl}#services">${t('services')}</a><a href="${homeUrl}#portfolio">${t('work')}</a><a href="${homeUrl}#contact">${t('contact')}</a><div class="language-switcher" role="group" aria-label="Language"><button class="${lang === 'en' ? 'active' : ''}" type="button" data-lang="en">English</button><span>/</span><button class="${lang === 'zh' ? 'active' : ''}" type="button" data-lang="zh">中文</button></div><a href="${homeUrl}#contact" class="nav-cta">${t('start')} <span>↗</span></a></nav>
     </header>`;
   }
 
@@ -137,7 +145,12 @@
   }
 
   function serviceCard(key, service) {
-    return `<a class="content-card text-card" href="${projectsUrl(service)}"><div class="content-card-copy"><small>${lang === 'zh' ? '专业设计服务' : 'PROFESSIONAL DESIGN SERVICE'}</small><h2>${pick(service.title)}</h2><p>${pick(service.description)}</p><span class="card-action">${t('viewProject')} <span>→</span></span></div></a>`;
+    const category = data.categories[service.category];
+    const number = String(category.services.indexOf(key) + 1).padStart(2,'0');
+    const includes = (service.includes || []).map(item => `<li>${pick(item)}</li>`).join('');
+    const price = pick(service.price || ['Contact for quotation','联系获取报价']);
+    const turnaround = pick(service.turnaround || ['', '']);
+    return `<article class="content-card text-card service-detail-card"><div class="content-card-copy"><small>${number} / ${lang === 'zh' ? '专业设计服务' : 'PROFESSIONAL DESIGN SERVICE'}</small><h2>${pick(service.title)}</h2><p>${pick(service.description)}</p><div class="service-card-meta"><p><span>${lang === 'zh' ? '价格' : 'Price'}</span><strong>${price}</strong></p>${turnaround ? `<p><span>${lang === 'zh' ? '交付时间' : 'Turnaround'}</span><strong>${turnaround}</strong></p>` : ''}</div>${includes ? `<ul class="service-includes">${includes}</ul>` : ''}<div class="service-card-actions"><a class="card-action" href="${projectsUrl(service)}">${t('viewProject')} <span>→</span></a><a class="card-action secondary" href="${homeUrl}#contact">${t('start')} <span>↗</span></a></div></div></article>`;
   }
 
   function workPage() {
@@ -170,42 +183,23 @@
     if (!study) return notFound();
     const labels = studyLabels();
     const heroImage = study.images[0];
-    const colors = study.colors.map(color => `<li><i style="--swatch:${color[0]}"></i><span>${color[lang === 'zh' ? 2 : 1]}</span><code>${color[0]}</code></li>`).join('');
+    const colors = (study.colors || []).map(color => `<li><i style="--swatch:${color[0]}"></i><span>${color[lang === 'zh' ? 2 : 1]}</span><code>${color[0]}</code></li>`).join('');
     const typography = `<div class="study-type-sample"><span>Aa</span><div><strong>${lang === 'zh' ? '展示字体' : 'Display Typeface'}</strong><p>${pick(study.type)}</p></div></div><div class="study-type-sample"><span>Ag</span><div><strong>${lang === 'zh' ? '现代无衬线体' : 'Modern Sans Serif'}</strong><p>${lang === 'zh' ? '用于正文、说明与数字界面，确保各种尺寸下均清晰易读。' : 'Used for body copy, information and digital interfaces to remain clear at every size.'}</p></div></div>`;
     const gallery = study.images.slice(1).map((image, index) => `<figure class="study-gallery-item project-reveal" style="--reveal-index:${index};--media-ratio:${image.width} / ${image.height}"><div class="study-image-frame"><img src="${img(image.src)}" width="${image.width}" height="${image.height}" alt="${pick(image.alt)}" loading="lazy" decoding="async"></div><figcaption><span>${String(index + 2).padStart(2, '0')}</span>${pick(image.alt)}</figcaption></figure>`).join('');
     const deliverables = study.deliverables.map((item, index) => `<li><span>${String(index + 1).padStart(2, '0')}</span>${pick(item)}</li>`).join('');
+    const systemSection = colors || pick(study.type) ? `<section class="study-section study-system section"><div class="study-section-heading">${sectionMarker(labels.system, 3)}<h2>${labels.system}</h2></div><div class="study-system-grid">${colors ? `<article><h3>${labels.palette}</h3><ul class="study-palette">${colors}</ul></article>` : ''}${pick(study.type) ? `<article><h3>${labels.typography}</h3><div class="study-type">${typography}</div></article>` : ''}</div></section>` : '';
     return `<article class="case-study case-study-${study.layout}" style="--study-accent:${study.accent}">
-      <header class="study-hero section">
-        <div class="breadcrumbs">${trail.map((item,index) => index < trail.length - 1 ? `<a href="${item.url}">${item.label}</a><span>/</span>` : `<b>${item.label}</b>`).join('')}</div>
-        <div class="study-hero-copy project-reveal"><p class="inner-kicker">INFINITY / ${labels.project}</p><h1>${pick(study.title)}</h1><p>${pick(study.overview)}</p><dl><div><dt>${labels.service}</dt><dd>${pick(service.title)}</dd></div><div><dt>${labels.client}</dt><dd>${study.brand}</dd></div><div><dt>${labels.year}</dt><dd>2026</dd></div></dl></div>
-        <figure class="study-cover project-reveal" style="--reveal-index:1;--media-ratio:${heroImage.width} / ${heroImage.height}"><img src="${img(heroImage.src)}" width="${heroImage.width}" height="${heroImage.height}" alt="${pick(heroImage.alt)}" fetchpriority="high" decoding="async"><figcaption>${pick(heroImage.alt)} · ${labels.fictional}</figcaption></figure>
-      </header>
-      <section class="study-section study-intro section"><div>${sectionMarker(labels.overview, 1)}<h2>${labels.overview}</h2><p>${pick(study.overview)}</p></div><aside><span>${labels.client}</span><p>${pick(study.client)}</p></aside></section>
-      <section class="study-section study-showcase section"><div class="study-section-heading">${sectionMarker(labels.gallery, 2)}<h2>${labels.gallery}</h2></div><div class="study-gallery">${gallery}</div></section>
-      <section class="study-section study-system section"><div class="study-section-heading">${sectionMarker(labels.system, 3)}<h2>${labels.system}</h2></div><div class="study-system-grid"><article><h3>${labels.palette}</h3><ul class="study-palette">${colors}</ul></article><article><h3>${labels.typography}</h3><div class="study-type">${typography}</div></article></div></section>
-      <section class="study-section study-deliverables section"><div class="study-section-heading">${sectionMarker(labels.deliverables, 4)}<h2>${labels.deliverables}</h2></div><ol>${deliverables}</ol><a class="btn btn-gold" href="${categoryUrl(service.category)}"><b class="button-label">${labels.back}</b><span>←</span></a></section>
+      <section class="study-section study-overview section"><div class="breadcrumbs">${trail.map((item,index) => index < trail.length - 1 ? `<a href="${item.url}">${item.label}</a><span>/</span>` : `<b>${item.label}</b>`).join('')}</div><div class="study-overview-grid"><div class="project-reveal">${sectionMarker(labels.overview, 1)}<h1>${pick(study.title)}</h1><p>${pick(study.overview)}</p></div><aside><dl><div><dt>${labels.service}</dt><dd>${pick(service.title)}</dd></div><div><dt>${labels.client}</dt><dd>${study.brand}</dd></div><div><dt>${labels.year}</dt><dd>2026</dd></div></dl><span>${labels.client}</span><p>${pick(study.client)}</p></aside></div></section>
+      <section class="study-section study-showcase section"><div class="study-section-heading">${sectionMarker(labels.gallery, 2)}<h2>${labels.gallery}</h2></div><figure class="study-cover project-reveal" style="--media-ratio:${heroImage.width} / ${heroImage.height}"><img src="${img(heroImage.src)}" width="${heroImage.width}" height="${heroImage.height}" alt="${pick(heroImage.alt)}" fetchpriority="high" decoding="async"><figcaption>${pick(heroImage.alt)} · ${labels.fictional}</figcaption></figure><div class="study-gallery">${gallery}</div></section>
+      ${systemSection}
+      ${deliverables ? `<section class="study-section study-deliverables section"><div class="study-section-heading">${sectionMarker(labels.deliverables, 4)}<h2>${labels.deliverables}</h2></div><ol>${deliverables}</ol><a class="btn btn-gold" href="${categoryUrl(service.category)}"><b class="button-label">${labels.back}</b><span>←</span></a></section>` : ''}
     </article>`;
-  }
-
-  function posterProjectsPage(service, category) {
-    const labels = lang === 'zh'
-      ? {title:'海报设计项目', intro:'探索完整的商业海报项目，每个项目均提供独立案例页面与完整作品展示。', category:'类别', back:'返回服务类别'}
-      : {title:'Poster Design Projects', intro:'Explore complete commercial poster projects, each with a dedicated case-study page and full artwork presentation.', category:'Category', back:'Back to Service Category'};
-    const trail = [{label:t('home'),url:homeUrl},{label:t('work'),url:root+'work/'},{label:pick(category.title),url:categoryUrl(service.category)},{label:labels.title}];
-    const cards = ['poster'].map((studyKey, index) => {
-      const study = caseStudies[studyKey];
-      const cover = study.images[0];
-      const href = root + posterProjectRoutes[studyKey];
-      return `<article class="project-showcase-card project-reveal" style="--reveal-index:${index}"><a class="project-showcase-cover" href="${href}" aria-label="${t('viewProject')}: ${pick(study.title)}"><img src="${img(cover.src)}" width="${cover.width}" height="${cover.height}" alt="${pick(cover.alt)}" ${index === 0 ? 'fetchpriority="high"' : 'loading="lazy"'} decoding="async"></a><div class="project-showcase-copy"><p class="inner-kicker">${pick(service.title)}</p><h2>${pick(study.title)}</h2><p>${pick(study.overview)}</p><div class="project-category"><span>${labels.category}</span><strong>${pick(service.title)}</strong></div><a class="btn btn-gold project-showcase-action" href="${href}"><b class="button-label">${t('viewProject')}</b><span>↗</span></a></div></article>`;
-    }).join('');
-    return hero(labels.title, labels.intro, trail, lang === 'zh' ? 'INFINITY / 项目' : 'INFINITY / PROJECTS') + `<section class="content-section project-listing"><div class="poster-project-list">${cards}</div><a class="back-link" href="${categoryUrl(service.category)}">← ${labels.back}</a></section>`;
   }
 
   function projectsPage(serviceKey) {
     const service = serviceByKey(serviceKey);
     if (!service) return notFound();
     const category = data.categories[service.category];
-    if (serviceKey === 'poster') return posterProjectsPage(service, category);
     const study = caseStudies[serviceKey];
     const pageTitle = study ? pick(study.title) : `${pick(service.title)} ${t('projects')}`;
     const trail = [{label:t('home'),url:homeUrl},{label:t('work'),url:root+'work/'},{label:pick(category.title),url:categoryUrl(service.category)},{label:pageTitle}];

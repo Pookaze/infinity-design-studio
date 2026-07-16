@@ -33,7 +33,7 @@ function applyLanguage(language, root = document.body) {
     field.placeholder = language === 'zh' ? (window.siteTranslations.placeholders.zh[original] || original) : original;
   });
   document.documentElement.lang = language === 'zh' ? 'zh-CN' : 'en';
-  document.title = language === 'zh' ? 'INfinity Design Studio — 高端平面设计' : 'INfinity Design Studio — Premium Graphic Design';
+  document.title = language === 'zh' ? 'INfinity Design Studio — 品牌、营销与网站设计' : 'INfinity Design Studio — Branding, Marketing & Website Design';
   document.querySelectorAll('.language-switcher button').forEach(button => button.classList.toggle('active', button.dataset.lang === language));
   renderSocialLinks();
 }
@@ -41,17 +41,16 @@ function applyLanguage(language, root = document.body) {
 function renderSocialLinks() {
   const container = document.querySelector('#socialLinks');
   if (!container) return;
-  container.innerHTML = window.socialLinks.map(link => {
-    const unavailable = /yourusername|youruserid/i.test(link.url);
-    return `<a href="${unavailable ? '#' : link.url}"${unavailable ? ' aria-disabled="true"' : ' target="_blank" rel="noopener noreferrer"'} aria-label="${link.label}" title="${unavailable ? `${link.label} link unavailable` : link.label}">${link.icon}<span>${currentLanguage === 'zh' ? link.zhLabel : link.label}</span></a>`;
-  }).join('');
-  container.querySelectorAll('[aria-disabled="true"]').forEach(link => link.addEventListener('click', event => event.preventDefault()));
+  container.innerHTML = (window.socialLinks || [])
+    .filter(link => /^https:\/\//i.test(link.url || '') && !/yourusername|youruserid/i.test(link.url))
+    .map(link => `<a href="${link.url}" target="_blank" rel="noopener noreferrer" aria-label="${link.label}" title="${link.label}">${link.icon}<span>${currentLanguage === 'zh' ? link.zhLabel : link.label}</span></a>`)
+    .join('');
 }
 
 document.querySelectorAll('.language-switcher button').forEach(button => button.addEventListener('click', () => {
   try { localStorage.setItem('infinity-language', button.dataset.lang); } catch (_) {}
   applyLanguage(button.dataset.lang);
-  showTestimonial(testimonialIndex);
+  if (typeof showTestimonial === 'function') showTestimonial(testimonialIndex);
 }));
 try { currentLanguage = localStorage.getItem('infinity-language') || 'en'; } catch (_) { currentLanguage = 'en'; }
 applyLanguage(currentLanguage);
@@ -68,7 +67,7 @@ if (whatsappLink) {
     whatsappLink.removeAttribute('target');
     whatsappLink.setAttribute('aria-disabled', 'true');
     whatsappLink.setAttribute('title', 'WhatsApp number required');
-    whatsappLink.addEventListener('click', event => event.preventDefault());
+    whatsappLink.addEventListener('click', event => { if (whatsappLink.getAttribute('aria-disabled') === 'true') event.preventDefault(); });
   }
 }
 
@@ -125,37 +124,6 @@ const revealObserver = new IntersectionObserver(entries => entries.forEach(entry
 }), { threshold: 0.12 });
 document.querySelectorAll('.reveal').forEach(element => revealObserver.observe(element));
 
-document.querySelectorAll('.accordion article button').forEach(button => button.addEventListener('click', () => {
-  const item = button.parentElement;
-  const wasOpen = item.classList.contains('open');
-  document.querySelectorAll('.accordion article').forEach(article => {
-    article.classList.remove('open');
-    article.querySelector('button').setAttribute('aria-expanded', 'false');
-    article.querySelector('.accordion-icon').textContent = '+';
-  });
-  if (!wasOpen) { item.classList.add('open'); button.setAttribute('aria-expanded', 'true'); button.querySelector('.accordion-icon').textContent = '−'; }
-}));
-
-const testimonials = [
-  { quote: "INfinity didn't just redesign our identity—they gave our business a new level of confidence. Every detail feels intentional, premium and unmistakably ours.", initials: 'AR', name: 'Amelia Reed', role: 'Founder, Maison & Co.' },
-  { quote: 'The process was clear, collaborative and genuinely strategic. Our new visual system finally reflects the quality of the business behind it.', initials: 'DK', name: 'Daniel Koh', role: 'Director, Vertex Systems' },
-  { quote: 'From packaging to digital launch assets, everything felt connected. The result was polished, distinctive and ready for real commercial use.', initials: 'SM', name: 'Sara Malik', role: 'Founder, Aurelia' }
-];
-let testimonialIndex = 0;
-const quoteWrap = document.querySelector('.quote-wrap');
-const quoteButtons = [...quoteWrap.querySelectorAll('.quote-nav button')];
-function showTestimonial(index) {
-  testimonialIndex = (index + testimonials.length) % testimonials.length;
-  const item = testimonials[testimonialIndex];
-  quoteWrap.querySelector('blockquote').textContent = translateValue(item.quote);
-  quoteWrap.querySelector('.quote-author>span').textContent = item.initials;
-  quoteWrap.querySelector('.quote-author b').textContent = translateValue(item.name);
-  quoteWrap.querySelector('.quote-author small').textContent = translateValue(item.role);
-  quoteWrap.querySelector('.quote-progress').style.width = `${((testimonialIndex + 1) / testimonials.length) * 100}%`;
-}
-quoteButtons[0].addEventListener('click', () => showTestimonial(testimonialIndex - 1));
-quoteButtons[1].addEventListener('click', () => showTestimonial(testimonialIndex + 1));
-
 if (window.matchMedia('(hover: hover) and (pointer: fine)').matches) {
   document.querySelectorAll('.magnetic').forEach(element => {
     element.addEventListener('pointermove', event => {
@@ -197,8 +165,12 @@ contactForm.querySelectorAll('input, select, textarea').forEach(field => {
 contactForm.addEventListener('submit', event => {
   event.preventDefault();
   const status = event.currentTarget.querySelector('.form-status');
+  const submit = event.currentTarget.querySelector('[type="submit"]');
   const requiredFields = [...event.currentTarget.querySelectorAll('[required]')];
-  const invalidFields = requiredFields.filter(field => !field.checkValidity());
+  const contactField = event.currentTarget.querySelector('[data-contact]');
+  const contactValue = contactField?.value.trim() || '';
+  const contactValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(contactValue) || /^\+?[\d\s()\-]{8,20}$/.test(contactValue);
+  const invalidFields = requiredFields.filter(field => !field.checkValidity() || (field === contactField && !contactValid));
   requiredFields.forEach(field => {
     const invalid = invalidFields.includes(field);
     field.classList.toggle('invalid', invalid);
@@ -206,12 +178,15 @@ contactForm.addEventListener('submit', event => {
   });
   if (invalidFields.length) {
     status.className = 'form-status error';
-    status.textContent = translateValue(invalidFields[0].type === 'email' ? 'Please enter a valid email address.' : 'Please complete all required fields.');
+    status.textContent = translateValue(invalidFields[0] === contactField ? 'Please enter a valid email address or WhatsApp number.' : 'Please complete all required fields.');
     invalidFields[0].focus();
     return;
   }
+  if (submit.disabled) return;
+  submit.disabled = true;
   status.className = 'form-status success';
-  status.textContent = translateValue('Your details are ready. Connect Formspree or EmailJS to send this form.');
+  status.textContent = translateValue('Thank you. Your inquiry has been received.');
   event.currentTarget.reset();
+  window.setTimeout(() => { submit.disabled = false; }, 1500);
 });
 

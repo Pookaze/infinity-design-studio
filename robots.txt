@@ -1,4 +1,4 @@
 User-agent: *
 Allow: /
 
-Sitemap: https://pookaze.github.io/infinity-design-studio/sitemap.xml
+Sitemap: https://infinity-design-studio.vercel.app/sitemap.xml
