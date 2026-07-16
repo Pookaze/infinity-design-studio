@@ -193,7 +193,7 @@ async function renderRoute(){parseRoute();document.querySelectorAll('[data-route
 
 async function start(){if(!configured)return setupView();const {data}=await supabase.auth.getSession();state.session=data.session;if(!state.session)return authView();if(!await loadProfile())return authView();parseRoute();shell()}
 window.addEventListener('hashchange',()=>{if(state.session)renderRoute()});
-if(supabase)supabase.auth.onAuthStateChange(async(event,session)=>{state.session=session;if(event==='SIGNED_OUT')authView();else if(event==='SIGNED_IN'&&!state.profile){if(await loadProfile()){parseRoute();shell()}}});
+if(supabase)supabase.auth.onAuthStateChange(async(event,session)=>{state.session=session;if(event==='SIGNED_OUT'){state.profile=null;authView()}else if(event==='SIGNED_IN'&&!state.profile){if(await loadProfile()){parseRoute();shell()}}});
 start();
 
 let lastActivity=Date.now();['pointerdown','keydown','scroll'].forEach(event=>window.addEventListener(event,()=>{lastActivity=Date.now()},{passive:true}));
