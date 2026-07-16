@@ -185,7 +185,7 @@ contactForm.addEventListener('submit', event => {
   if (submit.disabled) return;
   submit.disabled = true;
   status.className = 'form-status success';
-  status.textContent = translateValue('Thank you. Your inquiry has been received.');
+  status.textContent = translateValue('Thank you. Your inquiry details are ready.');
   event.currentTarget.reset();
   window.setTimeout(() => { submit.disabled = false; }, 1500);
 });

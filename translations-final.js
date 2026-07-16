@@ -16,7 +16,7 @@
     'Discover':'探索', 'Goals, audience, requirements.':'目标、受众、需求。', 'Concepts, direction, refinement.':'概念、方向、优化。', 'Deliver':'交付', 'Final files, launch support.':'最终文件、上线支持。',
     'Ready to start':'准备开始', 'your next':'您的下一个', 'your next ':'您的下一个', 'project?':'项目吗？', 'Tell us what you need and we will reply with the next steps.':'告诉我们您的需求，我们会回复后续步骤。', 'Chat on WhatsApp ↗':'WhatsApp 联系 ↗',
     'Name':'姓名', 'Email or WhatsApp number':'电子邮箱或 WhatsApp 号码', 'Budget':'预算', 'Details':'项目详情', 'Choose a service':'选择服务', 'Choose a range':'选择预算范围', 'Send Inquiry':'提交咨询',
-    'Please enter a valid email address or WhatsApp number.':'请输入有效的电子邮箱或 WhatsApp 号码。', 'Thank you. Your inquiry has been received.':'谢谢，我们已收到您的咨询。',
+    'Please enter a valid email address or WhatsApp number.':'请输入有效的电子邮箱或 WhatsApp 号码。', 'Thank you. Your inquiry details are ready.':'谢谢，您的咨询资料已准备好。',
     'Strategic branding, marketing design and modern websites for growing businesses.':'为成长中的企业提供策略性品牌、营销设计与现代网站。'
   });
   Object.assign(window.siteTranslations.placeholders.zh, {
