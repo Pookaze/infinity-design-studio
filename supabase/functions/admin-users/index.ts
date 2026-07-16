@@ -22,7 +22,6 @@ Deno.serve(async request=>{
   try {
 
   const authorization=request.headers.get('authorization')||'';
-  if(!authorization.startsWith('Bearer '))return json(request,{error:'Unauthorized'},401);
   let secretKey='';
   try{secretKey=JSON.parse(Deno.env.get('SUPABASE_SECRET_KEYS')||'{}').default||'';}catch{secretKey='';}
   secretKey=secretKey||Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')||'';
@@ -33,6 +32,29 @@ Deno.serve(async request=>{
   if(!secretKey||!supabaseUrl||!publishableKey)return json(request,{error:'Administrator service unavailable'},500);
 
   const adminHeaders={apikey:secretKey,'Content-Type':'application/json'};
+  let body:Record<string,unknown>={};
+  try{body=await request.json();}catch{return json(request,{error:'Invalid request'},400);}
+  const action=String(body.action||'list');
+
+  if(action==='sign-in'){
+    const identifier=String(body.identifier||'').trim().toLowerCase();
+    const password=String(body.password||'');
+    if(!identifier||!password)return json(request,{error:'Sign in failed'},401);
+    let email=identifier;
+    if(!identifier.includes('@')){
+      if(!validUsername(identifier))return json(request,{error:'Sign in failed'},401);
+      const lookup=await fetch(`${supabaseUrl}/rest/v1/admin_users?username=eq.${encodeURIComponent(identifier)}&is_active=eq.true&select=email&limit=1`,{headers:adminHeaders});
+      const matches=lookup.ok?await lookup.json() as Array<{email:string}>:[];
+      email=matches[0]?.email||'';
+    }
+    if(!email)return json(request,{error:'Sign in failed'},401);
+    const tokenResponse=await fetch(`${supabaseUrl}/auth/v1/token?grant_type=password`,{method:'POST',headers:{apikey:publishableKey,'Content-Type':'application/json'},body:JSON.stringify({email,password})});
+    if(!tokenResponse.ok)return json(request,{error:'Sign in failed'},401);
+    const token=await tokenResponse.json() as Record<string,unknown>;
+    return json(request,{access_token:token.access_token,refresh_token:token.refresh_token});
+  }
+
+  if(!authorization.startsWith('Bearer '))return json(request,{error:'Unauthorized'},401);
   const userResponse=await fetch(`${supabaseUrl}/auth/v1/user`,{headers:{apikey:publishableKey,Authorization:authorization}});
   if(!userResponse.ok)return json(request,{error:'Unauthorized'},401);
   const caller=await userResponse.json() as {id:string,email?:string};
@@ -40,10 +62,6 @@ Deno.serve(async request=>{
   const profiles=profileResponse.ok?await profileResponse.json() as Array<Record<string,unknown>>:[];
   const callerProfile=profiles[0];
   if(!callerProfile||callerProfile.is_active!==true)return json(request,{error:'Administrator access disabled'},403);
-
-  let body:Record<string,unknown>={};
-  try{body=await request.json();}catch{return json(request,{error:'Invalid request'},400);}
-  const action=String(body.action||'list');
 
   if(action==='session'){
     const forwarded=(request.headers.get('cf-connecting-ip')||request.headers.get('x-forwarded-for')||'').split(',')[0].trim();

@@ -38,9 +38,15 @@ function authView(mode='login') {
     if (!reset) {
       const lockUntil = Number(localStorage.getItem('infinity-cms-lock-until') || 0);
       if (Date.now() < lockUntil) { message.className='message error'; message.textContent='Too many attempts. Try again in a few minutes.'; button.disabled=false; return; }
-      const entered=String(values.get('email')).trim(), aliases={owner:'owner@cms.infinity.local','admin 2':'admin2@cms.infinity.local','admin-2':'admin2@cms.infinity.local',admin2:'admin2@cms.infinity.local','admin 3':'admin3@cms.infinity.local','admin-3':'admin3@cms.infinity.local',admin3:'admin3@cms.infinity.local'};
-      const email=aliases[entered.toLowerCase()]||entered;
-      const { error } = await supabase.auth.signInWithPassword({ email, password:String(values.get('password')) });
+      const entered=String(values.get('email')).trim(), password=String(values.get('password'));
+      let error=null;
+      try{
+        const response=await fetch(`${config.supabaseUrl}/functions/v1/admin-users`,{method:'POST',headers:{apikey:config.supabaseAnonKey,'Content-Type':'application/json','x-client-info':'infinity-cms'},body:JSON.stringify({action:'sign-in',identifier:entered,password})});
+        const data=await response.json();
+        if(!response.ok||!data.access_token||!data.refresh_token)throw new Error('Sign in failed');
+        const result=await supabase.auth.setSession({access_token:data.access_token,refresh_token:data.refresh_token});
+        error=result.error;
+      }catch(signInError){error=signInError}
       if (error) {
         const attempts = Number(localStorage.getItem('infinity-cms-attempts') || 0) + 1;
         localStorage.setItem('infinity-cms-attempts',String(attempts));
