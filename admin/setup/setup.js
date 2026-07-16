@@ -1,4 +1,5 @@
 import { createClient } from '@supabase/supabase-js';
+import { importExistingContent } from '../import-existing.js';
 
 const app = document.querySelector('#setup-app');
 const config = window.INFINITY_CMS_CONFIG || {};
@@ -42,13 +43,7 @@ if (!secret || !config.supabaseUrl || !config.supabaseAnonKey) {
       const manifestResponse = await fetch('../../cms-import-manifest.json', {cache:'no-store'});
       if (!manifestResponse.ok) throw new Error('Website migration manifest is unavailable.');
       const manifest = await manifestResponse.json();
-      const importResponse = await fetch(`${config.supabaseUrl}/functions/v1/import-existing-content`, {
-        method:'POST',
-        headers:{apikey:config.supabaseAnonKey,Authorization:`Bearer ${login.session.access_token}`,'Content-Type':'application/json'},
-        body:JSON.stringify({manifest})
-      });
-      const importResult = await importResponse.json();
-      if (!importResponse.ok) throw new Error(importResult.error || 'Website import failed');
+      const importResult = await importExistingContent(supabase,manifest,progress=>message.textContent=progress);
       history.replaceState(null, '', location.pathname);
       form.reset();
       Object.keys(passwords).forEach(key => passwords[key] = '');
