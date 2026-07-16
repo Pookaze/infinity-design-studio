@@ -34,7 +34,6 @@ function applyLanguage(language, root = document.body) {
   });
   document.documentElement.lang = language === 'zh' ? 'zh-CN' : 'en';
   document.title = language === 'zh' ? 'INfinity Design Studio — 高端平面设计' : 'INfinity Design Studio — Premium Graphic Design';
-  if (root === document.body) document.querySelector('.hero h1').innerHTML = language === 'zh' ? '我们打造具有<br><span class="display-accent">长久影响力</span>的品牌。' : 'We create brands<br>with <span class="display-accent">lasting</span> impact.';
   document.querySelectorAll('.language-switcher button').forEach(button => button.classList.toggle('active', button.dataset.lang === language));
   renderSocialLinks();
 }
