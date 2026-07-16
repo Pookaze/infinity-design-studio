@@ -8,7 +8,6 @@ const supabase = configured ? createClient(config.supabaseUrl, config.supabaseAn
   global:{ headers:{ 'x-application-name':'infinity-cms' } }
 }) : null;
 const state = { session:null, profile:null, route:'dashboard', editId:null, lang:'en', cache:new Map() };
-let lastActivity=Date.now();
 const routes = [
   ['dashboard','01','Dashboard'],['home','02','Home'],['about','03','About'],['services','04','Services'],
   ['projects','05','Work / Projects'],['contact','06','Contact'],['media','07','Media Library'],['navigation','08','Navigation'],['footer','09','Footer'],
@@ -53,7 +52,7 @@ function authView(mode='login') {
         localStorage.setItem('infinity-cms-attempts',String(attempts));
         if (attempts >= 5) { localStorage.setItem('infinity-cms-lock-until',String(Date.now()+5*60*1000)); localStorage.removeItem('infinity-cms-attempts'); }
         message.className='message error'; message.textContent='Sign in failed. Check your details or reset your password.'; button.disabled=false;
-      } else { lastActivity=Date.now(); localStorage.removeItem('infinity-cms-attempts'); localStorage.removeItem('infinity-cms-lock-until'); }
+      } else { localStorage.removeItem('infinity-cms-attempts'); localStorage.removeItem('infinity-cms-lock-until'); }
     } else {
       const { error } = await supabase.auth.resetPasswordForEmail(String(values.get('email')), { redirectTo:`${location.origin}${location.pathname}` });
       message.className=`message ${error?'error':'success'}`; message.textContent=error ? error.message : 'Reset link sent. Check your inbox.'; button.disabled=false;
@@ -399,8 +398,5 @@ async function renderRoute(){parseRoute();document.querySelectorAll('[data-route
 
 async function start(){if(!configured)return setupView();const {data}=await supabase.auth.getSession();state.session=data.session;if(!state.session)return authView();if(!await loadProfile())return authView();parseRoute();shell()}
 window.addEventListener('hashchange',()=>{if(state.session)renderRoute()});
-if(supabase)supabase.auth.onAuthStateChange(async(event,session)=>{state.session=session;if(event==='SIGNED_OUT'){state.profile=null;authView()}else if(event==='SIGNED_IN'){lastActivity=Date.now();if(!state.profile&&await loadProfile()){parseRoute();shell()}}});
+if(supabase)supabase.auth.onAuthStateChange(async(event,session)=>{state.session=session;if(event==='SIGNED_OUT'){state.profile=null;authView()}else if(event==='SIGNED_IN'&&!state.profile){if(await loadProfile()){parseRoute();shell()}}});
 start();
-
-['pointerdown','keydown','scroll'].forEach(event=>window.addEventListener(event,()=>{lastActivity=Date.now()},{passive:true}));
-setInterval(()=>{if(state.session&&Date.now()-lastActivity>30*60*1000)supabase?.auth.signOut()},60*1000);
