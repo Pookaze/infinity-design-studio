@@ -1,0 +1,13 @@
+project_id = "infinity-design-studio"
+
+[functions.bootstrap-owner]
+verify_jwt = false
+
+[functions.bootstrap-admins]
+verify_jwt = false
+
+[functions.import-existing-content]
+verify_jwt = false
+
+[functions.admin-users]
+verify_jwt = true
