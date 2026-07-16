@@ -9,6 +9,14 @@ Thumbs.db
 *.tmp
 tmp/
 node_modules/
+.pnpm-store/
+dist/
+.vercel/
+.supabase/
+.env
+.env.*
+!.env.example
+cms-config.local.js
 
 # Codex workspace metadata
 .agents/

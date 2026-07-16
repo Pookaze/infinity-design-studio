@@ -4,8 +4,8 @@
   const root = body.dataset.root || '../';
   const pageType = body.dataset.page;
   const pageKey = body.dataset.key || '';
-  const data = window.infinityWork;
-  const caseStudies = window.infinityCaseStudies || {};
+  let data = window.infinityWork;
+  let caseStudies = window.infinityCaseStudies || {};
   let lang = 'en';
   try { lang = localStorage.getItem('infinity-language') || 'en'; } catch (_) {}
   const pick = value => Array.isArray(value) ? value[lang === 'zh' ? 1 : 0] : value;
@@ -14,7 +14,7 @@
     zh: {home:'首页',about:'关于我们',services:'服务',work:'作品',contact:'联系我们',start:'开始项目',viewCategory:'浏览类别',viewProject:'查看项目',backCategory:'返回服务类别',projects:'项目',rights:'© 2026 INfinity Design Studio。保留所有权利。',privacy:'隐私政策',terms:'服务条款',backHome:'返回首页',updated:'最后更新：2026年7月'}
   };
   const t = key => ui[lang][key];
-  const img = path => root + path;
+  const img = path => /^(?:https?:|data:|blob:)/.test(path || '') ? path : root + path;
   const homeUrl = root + 'index.html';
   const categoryUrl = key => root + 'work/' + key + '/';
   const serviceUrl = service => root + 'work/' + service.category + '/' + Object.keys(data.services).find(key => data.services[key] === service) + '/';
@@ -22,6 +22,82 @@
   const serviceByKey = key => data.services[key];
   const allServices = Object.entries(data.services);
   let pageObserver;
+  async function loadCmsConfig() {
+    if (window.INFINITY_CMS_CONFIG) return window.INFINITY_CMS_CONFIG;
+    await new Promise(resolve => {
+      const script = document.createElement('script');
+      script.src = root + 'cms-config.js';
+      script.onload = script.onerror = resolve;
+      document.head.append(script);
+    });
+    return window.INFINITY_CMS_CONFIG || {};
+  }
+
+  async function cmsRequest(path, config) {
+    const response = await fetch(`${config.supabaseUrl}/rest/v1/${path}`, {
+      headers: { apikey:config.supabaseAnonKey, Authorization:`Bearer ${config.supabaseAnonKey}` },
+      signal: AbortSignal.timeout ? AbortSignal.timeout(5000) : undefined
+    });
+    if (!response.ok) throw new Error(`CMS request failed (${response.status})`);
+    return response.json();
+  }
+
+  function applyCmsTheme(theme) {
+    if (!theme?.colors) return;
+    const map = { primary:'--gold', accent:'--accent', background:'--black', surface:'--surface', text:'--white', muted:'--muted', border:'--line' };
+    Object.entries(map).forEach(([key,token]) => theme.colors[key] && document.documentElement.style.setProperty(token,theme.colors[key]));
+    const fonts = theme.fonts || {};
+    if (fonts.heading) document.documentElement.style.setProperty('--font-display',`"${fonts.heading}",sans-serif`);
+    if (fonts.body) document.documentElement.style.setProperty('--font-body',`"${fonts.body}",sans-serif`);
+  }
+
+  async function hydrateFromCms() {
+    try {
+      const config = await loadCmsConfig();
+      if (!/^https:\/\/.+\.supabase\.co$/.test(config.supabaseUrl || '') || !config.supabaseAnonKey) return;
+      const [categories, services, themes] = await Promise.all([
+        cmsRequest('service_categories?select=slug,title_en,title_zh,description_en,description_zh,sort_order&is_visible=eq.true&order=sort_order',config),
+        cmsRequest('services?select=slug,title_en,title_zh,description_en,description_zh,project_url,sort_order,service_categories!inner(slug)&status=eq.published&is_visible=eq.true&deleted_at=is.null&order=sort_order',config),
+        cmsRequest('theme_settings?select=colors,fonts&limit=1',config)
+      ]);
+      applyCmsTheme(themes[0]);
+      if (categories.length && services.length) {
+        const next = { categories:{}, services:{} };
+        categories.forEach(category => {
+          const fallback = data.categories[category.slug] || {};
+          next.categories[category.slug] = { title:[category.title_en,category.title_zh], intro:[category.description_en || fallback.intro?.[0] || '',category.description_zh || fallback.intro?.[1] || ''], services:[] };
+        });
+        services.forEach(service => {
+          const category = service.service_categories.slug;
+          const fallback = data.services[service.slug] || {};
+          next.services[service.slug] = { category, title:[service.title_en,service.title_zh], description:[service.description_en || fallback.description?.[0] || '',service.description_zh || fallback.description?.[1] || ''], includes:fallback.includes || [], projectUrl:service.project_url };
+          next.categories[category]?.services.push(service.slug);
+        });
+        data = next;
+      }
+      if (pageType === 'projects' && pageKey) {
+        const projects = await cmsRequest(`projects?select=id,title_en,title_zh,short_description_en,short_description_zh,client_en,client_zh,industry_en,industry_zh,year,services_en,services_zh,cover_media_id,project_sections(*)&services!inner(slug)&services.slug=eq.${encodeURIComponent(pageKey)}&status=eq.published&deleted_at=is.null&order=published_at.desc&limit=1`,config);
+        if (projects[0]) {
+          const project = projects[0];
+          const media = await cmsRequest(`project_media?select=caption_en,caption_zh,sort_order,section_key,media(public_url,width,height,alt_en,alt_zh)&project_id=eq.${project.id}&order=sort_order`,config);
+          const cover = project.cover_media_id ? await cmsRequest(`media?select=public_url,width,height,alt_en,alt_zh&id=eq.${project.cover_media_id}&limit=1`,config) : [];
+          const section = key => project.project_sections.find(item => item.section_key === key) || {};
+          const overview = section('overview'), system = section('design-system'), deliverables = section('deliverables');
+          const images = [...cover,...media.map(item => item.media).filter(Boolean)].map(item => ({src:item.public_url,width:item.width||1600,height:item.height||1000,alt:[item.alt_en||project.title_en,item.alt_zh||project.title_zh]}));
+          if (images.length) caseStudies = {...caseStudies,[pageKey]:{
+            title:[project.title_en,project.title_zh], brand:project.client_en||project.title_en, accent:'#d6ad60', layout:'editorial',
+            overview:[overview.content_en?.text||project.short_description_en,overview.content_zh?.text||project.short_description_zh],
+            client:[project.client_en,project.client_zh], images,
+            colors:system.content_en?.colors||[['#0a0a0a','Black','黑色'],['#d6ad60','Gold','金色'],['#f4f1ea','Ivory','象牙白']],
+            type:[system.content_en?.typography||'Premium display and sans-serif system',system.content_zh?.typography||'高端展示字体与无衬线字体系统'],
+            deliverables:(deliverables.content_en?.items||project.services_en||[]).map((item,index)=>[item,(deliverables.content_zh?.items||project.services_zh||[])[index]||item])
+          }};
+        }
+      }
+    } catch (error) {
+      console.warn('CMS unavailable; using the verified static website content.', error);
+    }
+  }
   function restorePageScroll(resetPosition) {
     const roots = [document.documentElement, body];
     roots.forEach(element => {
@@ -217,5 +293,5 @@
   window.addEventListener('pageshow', () => restorePageScroll(false));
   window.addEventListener('load', () => restorePageScroll(false));
   if ('scrollRestoration' in history) history.scrollRestoration = 'manual';
-  render();
+  hydrateFromCms().finally(render);
 })();
