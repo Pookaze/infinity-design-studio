@@ -357,7 +357,7 @@ async function visualPageEditor(route='home'){
   const duplicateRecords=records.filter(item=>item.layout?.clone_of&&filter.includes(item.layout.clone_of)).map(item=>mergeVisualSection(schemaFor(item),item,homePage.id,item.sort_order));sections.push(...duplicateRecords);sections.sort((a,b)=>a.sort_order-b.sort_order);
   const draftKey=`visual-draft-${route}`,draft=JSON.parse(localStorage.getItem(draftKey)||'null');if(draft?.sections)sections=draft.sections;
   let lang=state.lang,history=[clone(sections)],historyIndex=0,expanded=sections.find(item=>item.is_visible)?.section_key||sections[0]?.section_key,historyTimer;
-  const pushHistory=()=>{clearTimeout(historyTimer);history=history.slice(0,historyIndex+1);history.push(clone(sections));historyIndex=history.length-1};
+  const pushHistory=()=>{clearTimeout(historyTimer);history=history.slice(0,historyIndex+1);history.push(clone(sections));historyIndex=history.length-1;const undo=document.querySelector('[data-undo]'),redo=document.querySelector('[data-redo]');if(undo)undo.disabled=historyIndex<=0;if(redo)redo.disabled=historyIndex>=history.length-1};
   const scheduleHistory=()=>{clearTimeout(historyTimer);historyTimer=setTimeout(pushHistory,450)};
   const change=(mutator,rerender=true)=>{mutator();sections.forEach((item,index)=>item.sort_order=index);pushHistory();if(rerender)render()};
   const render=()=>{
