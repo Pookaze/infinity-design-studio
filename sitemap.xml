@@ -1,25 +1,28 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <url><loc>https://infinity-design-studio.vercel.app/</loc></url>
+  <url><loc>https://infinity-design-studio.vercel.app/services/branding-identity/</loc></url>
+  <url><loc>https://infinity-design-studio.vercel.app/services/marketing-design/</loc></url>
+  <url><loc>https://infinity-design-studio.vercel.app/services/website-design/</loc></url>
   <url><loc>https://infinity-design-studio.vercel.app/work/</loc></url>
   <url><loc>https://infinity-design-studio.vercel.app/work/branding-identity/</loc></url>
-  <url><loc>https://infinity-design-studio.vercel.app/work/branding-identity/logo-design/projects/</loc></url>
-  <url><loc>https://infinity-design-studio.vercel.app/work/branding-identity/brand-identity/projects/</loc></url>
-  <url><loc>https://infinity-design-studio.vercel.app/work/branding-identity/business-card/projects/</loc></url>
-  <url><loc>https://infinity-design-studio.vercel.app/work/branding-identity/packaging/projects/</loc></url>
   <url><loc>https://infinity-design-studio.vercel.app/work/marketing-design/</loc></url>
-  <url><loc>https://infinity-design-studio.vercel.app/work/marketing-design/social-media/projects/</loc></url>
-  <url><loc>https://infinity-design-studio.vercel.app/work/marketing-design/poster/projects/</loc></url>
-  <url><loc>https://infinity-design-studio.vercel.app/work/marketing-design/flyer/projects/</loc></url>
-  <url><loc>https://infinity-design-studio.vercel.app/work/marketing-design/banner/projects/</loc></url>
-  <url><loc>https://infinity-design-studio.vercel.app/work/marketing-design/menu/projects/</loc></url>
   <url><loc>https://infinity-design-studio.vercel.app/work/website-design/</loc></url>
-  <url><loc>https://infinity-design-studio.vercel.app/work/website-design/business-website/projects/</loc></url>
-  <url><loc>https://infinity-design-studio.vercel.app/work/website-design/landing-page/projects/</loc></url>
-  <url><loc>https://infinity-design-studio.vercel.app/work/website-design/portfolio-website/projects/</loc></url>
-  <url><loc>https://infinity-design-studio.vercel.app/work/website-design/restaurant-website/projects/</loc></url>
-  <url><loc>https://infinity-design-studio.vercel.app/work/website-design/responsive-design/projects/</loc></url>
-  <url><loc>https://infinity-design-studio.vercel.app/work/website-design/basic-seo/projects/</loc></url>
+  <url><loc>https://infinity-design-studio.vercel.app/projects/logo-design-showcase/</loc></url>
+  <url><loc>https://infinity-design-studio.vercel.app/projects/brand-identity-showcase/</loc></url>
+  <url><loc>https://infinity-design-studio.vercel.app/projects/business-card-showcase/</loc></url>
+  <url><loc>https://infinity-design-studio.vercel.app/projects/packaging-showcase/</loc></url>
+  <url><loc>https://infinity-design-studio.vercel.app/projects/social-media-showcase/</loc></url>
+  <url><loc>https://infinity-design-studio.vercel.app/projects/poster-showcase/</loc></url>
+  <url><loc>https://infinity-design-studio.vercel.app/projects/flyer-showcase/</loc></url>
+  <url><loc>https://infinity-design-studio.vercel.app/projects/banner-showcase/</loc></url>
+  <url><loc>https://infinity-design-studio.vercel.app/projects/menu-showcase/</loc></url>
+  <url><loc>https://infinity-design-studio.vercel.app/projects/business-website-showcase/</loc></url>
+  <url><loc>https://infinity-design-studio.vercel.app/projects/landing-page-showcase/</loc></url>
+  <url><loc>https://infinity-design-studio.vercel.app/projects/portfolio-website-showcase/</loc></url>
+  <url><loc>https://infinity-design-studio.vercel.app/projects/restaurant-website-showcase/</loc></url>
+  <url><loc>https://infinity-design-studio.vercel.app/projects/responsive-design-showcase/</loc></url>
+  <url><loc>https://infinity-design-studio.vercel.app/projects/basic-seo-showcase/</loc></url>
   <url><loc>https://infinity-design-studio.vercel.app/privacy-policy/</loc></url>
   <url><loc>https://infinity-design-studio.vercel.app/terms-of-service/</loc></url>
 </urlset>

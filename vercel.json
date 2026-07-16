@@ -4,6 +4,9 @@
   "outputDirectory": "dist",
   "cleanUrls": true,
   "trailingSlash": true,
+  "rewrites": [
+    { "source": "/projects/:slug/", "destination": "/projects/?slug=:slug" }
+  ],
   "headers": [
     {
       "source": "/admin/(.*)",

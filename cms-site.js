@@ -12,7 +12,12 @@
     try { return localStorage.getItem('infinity-language') === 'zh' ? 'zh' : 'en'; } catch (_) { return 'en'; }
   };
   let content = null;
-  const safeLink = value => /^(?:#|\/|https:\/\/|mailto:|tel:)/i.test(String(value || '')) ? value : '#';
+  const safeLink = value => {
+    const link=String(value||'').trim();
+    if(/^(?:#|\/(?!\/)|https:\/\/|mailto:|tel:)/i.test(link))return link;
+    if(/^[a-z0-9][a-z0-9/_\-.?=&%#]*$/i.test(link))return link;
+    return '#';
+  };
   function sectionElement(section) {
     const layout=section.layout||{},cloneKey=section.section_key;
     if (layout.clone_of) {

@@ -20,7 +20,7 @@ for (const file of htmlFiles) {
   for (const match of html.matchAll(/(?:src|href)=["']([^"'#?]+)["']/g)) {
     const value = match[1];
     if (/^(?:https?:|mailto:|tel:|data:)/.test(value)) continue;
-    const target = resolve(dirname(file), value);
+    const target = value.startsWith('/') ? resolve(targetRoot,value.slice(1)) : resolve(dirname(file), value);
     try { await stat(target); } catch (_) { missing.push(`${file}: ${value}`); }
   }
 }

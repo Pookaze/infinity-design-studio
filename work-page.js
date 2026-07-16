@@ -4,21 +4,27 @@
   const root = body.dataset.root || '../';
   const pageType = body.dataset.page;
   const pageKey = body.dataset.key || '';
+  const requestedProjectSlug = pageType === 'project-slug' ? (new URLSearchParams(location.search).get('slug') || decodeURIComponent(location.pathname.split('/').filter(Boolean).pop() || '')) : '';
   let data = window.infinityWork;
   let caseStudies = window.infinityCaseStudies || {};
+  let categoryProjects = [];
+  let categoryProjectsLoaded = false;
+  let dynamicProjectServiceKey = '';
   let lang = 'en';
   try { lang = localStorage.getItem('infinity-language') || 'en'; } catch (_) {}
   const pick = value => Array.isArray(value) ? value[lang === 'zh' ? 1 : 0] : value;
   const ui = {
-    en: {home:'Home',about:'About',services:'Services',work:'Work',contact:'Contact',start:'Start a project',viewCategory:'Explore Category',viewProject:'View Project',backCategory:'Back to service category',projects:'Projects',rights:'© 2026 INfinity Design Studio. All rights reserved.',privacy:'Privacy Policy',terms:'Terms of Service',backHome:'Back to Home',updated:'Last updated: July 2026'},
-    zh: {home:'首页',about:'关于我们',services:'服务',work:'作品',contact:'联系我们',start:'开始项目',viewCategory:'浏览类别',viewProject:'查看项目',backCategory:'返回服务类别',projects:'项目',rights:'© 2026 INfinity Design Studio。保留所有权利。',privacy:'隐私政策',terms:'服务条款',backHome:'返回首页',updated:'最后更新：2026年7月'}
+    en: {home:'Home',about:'About',services:'Services',work:'Work',contact:'Contact',start:'Start a project',viewCategory:'Explore Category',viewProject:'View Project',viewProjects:'View Projects',backCategory:'Back to category',projects:'Projects',rights:'© 2026 INfinity Design Studio. All rights reserved.',privacy:'Privacy Policy',terms:'Terms of Service',backHome:'Back to Home',updated:'Last updated: July 2026'},
+    zh: {home:'首页',about:'关于我们',services:'服务',work:'作品',contact:'联系我们',start:'开始项目',viewCategory:'浏览类别',viewProject:'查看项目',viewProjects:'查看项目',backCategory:'返回类别',projects:'项目',rights:'© 2026 INfinity Design Studio。保留所有权利。',privacy:'隐私政策',terms:'服务条款',backHome:'返回首页',updated:'最后更新：2026年7月'}
   };
   const t = key => ui[lang][key];
   const img = path => /^(?:https?:|data:|blob:)/.test(path || '') ? path : root + path;
   const homeUrl = root + 'index.html';
   const categoryUrl = key => root + 'work/' + key + '/';
+  const serviceCategoryUrl = key => root + 'services/' + key + '/';
   const serviceUrl = service => root + 'work/' + service.category + '/' + Object.keys(data.services).find(key => data.services[key] === service) + '/';
   const projectsUrl = service => serviceUrl(service) + 'projects/';
+  const projectDetailUrl = slug => root + 'projects/' + encodeURIComponent(slug) + '/';
   const serviceByKey = key => data.services[key];
   const allServices = Object.entries(data.services);
   const posterProjectRoutes = {
@@ -55,6 +61,25 @@
     if (fonts.body) document.documentElement.style.setProperty('--font-body',`"${fonts.body}",sans-serif`);
   }
 
+  async function hydrateProjectRecord(project, studyKey, config) {
+    const media = await cmsRequest(`project_media?select=caption_en,caption_zh,sort_order,section_key,media(public_url,width,height,alt_en,alt_zh)&project_id=eq.${project.id}&order=sort_order`,config);
+    const cover = project.cover_media_id ? await cmsRequest(`media?select=public_url,width,height,alt_en,alt_zh&id=eq.${project.cover_media_id}&limit=1`,config) : [];
+    const sections = project.project_sections || [];
+    const section = key => sections.find(item => item.section_key === key) || {};
+    const overview = section('overview'), system = section('design-system'), deliverables = section('deliverables');
+    const images = [...cover,...media.map(item => item.media).filter(Boolean)].map(item => ({src:item.public_url,width:item.width||1600,height:item.height||1000,alt:[item.alt_en||project.title_en,item.alt_zh||project.title_zh]}));
+    if (!images.length) return;
+    caseStudies = {...caseStudies,[studyKey]:{
+      title:[project.title_en,project.title_zh], brand:project.client_en||project.title_en, accent:'#d6ad60', layout:'editorial', year:project.year||'',
+      overview:[overview.content_en?.text||project.short_description_en,overview.content_zh?.text||project.short_description_zh],
+      client:[project.client_en,project.client_zh], images,
+      colors:system.content_en?.colors||[],
+      type:[system.content_en?.typography||'',system.content_zh?.typography||''],
+      deliverables:(deliverables.content_en?.items||project.services_en||[]).map((item,index)=>[item,(deliverables.content_zh?.items||project.services_zh||[])[index]||item])
+    }};
+    dynamicProjectServiceKey = project.services?.slug || dynamicProjectServiceKey;
+  }
+
   async function hydrateFromCms() {
     try {
       const config = await loadCmsConfig();
@@ -87,24 +112,18 @@
         Object.entries(canonical).forEach(([category,order]) => next.categories[category] && next.categories[category].services.sort((a,b) => order.indexOf(a)-order.indexOf(b)));
         data = next;
       }
+      if (pageType === 'category' && pageKey) {
+        const projects = await cmsRequest('projects?select=id,slug,title_en,title_zh,short_description_en,short_description_zh,year,status,cover:media!projects_cover_media_id_fkey(public_url,width,height,alt_en,alt_zh),services!inner(slug,title_en,title_zh,service_categories!inner(slug))&status=eq.published&deleted_at=is.null&order=published_at.desc',config);
+        categoryProjects = projects.filter(project => project.services?.service_categories?.slug === pageKey);
+        categoryProjectsLoaded = true;
+      }
       if (pageType === 'projects' && pageKey) {
-        const projects = await cmsRequest(`projects?select=id,title_en,title_zh,short_description_en,short_description_zh,client_en,client_zh,industry_en,industry_zh,year,services_en,services_zh,cover_media_id,project_sections(*)&services!inner(slug)&services.slug=eq.${encodeURIComponent(pageKey)}&status=eq.published&deleted_at=is.null&order=published_at.desc&limit=1`,config);
-        if (projects[0]) {
-          const project = projects[0];
-          const media = await cmsRequest(`project_media?select=caption_en,caption_zh,sort_order,section_key,media(public_url,width,height,alt_en,alt_zh)&project_id=eq.${project.id}&order=sort_order`,config);
-          const cover = project.cover_media_id ? await cmsRequest(`media?select=public_url,width,height,alt_en,alt_zh&id=eq.${project.cover_media_id}&limit=1`,config) : [];
-          const section = key => project.project_sections.find(item => item.section_key === key) || {};
-          const overview = section('overview'), system = section('design-system'), deliverables = section('deliverables');
-          const images = [...cover,...media.map(item => item.media).filter(Boolean)].map(item => ({src:item.public_url,width:item.width||1600,height:item.height||1000,alt:[item.alt_en||project.title_en,item.alt_zh||project.title_zh]}));
-          if (images.length) caseStudies = {...caseStudies,[pageKey]:{
-            title:[project.title_en,project.title_zh], brand:project.client_en||project.title_en, accent:'#d6ad60', layout:'editorial',
-            overview:[overview.content_en?.text||project.short_description_en,overview.content_zh?.text||project.short_description_zh],
-            client:[project.client_en,project.client_zh], images,
-            colors:system.content_en?.colors||[],
-            type:[system.content_en?.typography||'',system.content_zh?.typography||''],
-            deliverables:(deliverables.content_en?.items||project.services_en||[]).map((item,index)=>[item,(deliverables.content_zh?.items||project.services_zh||[])[index]||item])
-          }};
-        }
+        const projects = await cmsRequest(`projects?select=id,slug,title_en,title_zh,short_description_en,short_description_zh,client_en,client_zh,industry_en,industry_zh,year,services_en,services_zh,cover_media_id,project_sections(*),services!inner(slug,title_en,title_zh,service_categories(slug))&services.slug=eq.${encodeURIComponent(pageKey)}&status=eq.published&deleted_at=is.null&order=published_at.desc&limit=1`,config);
+        if (projects[0]) await hydrateProjectRecord(projects[0],pageKey,config);
+      }
+      if (pageType === 'project-slug' && requestedProjectSlug) {
+        const projects = await cmsRequest(`projects?select=id,slug,title_en,title_zh,short_description_en,short_description_zh,client_en,client_zh,industry_en,industry_zh,year,services_en,services_zh,cover_media_id,project_sections(*),services!inner(slug,title_en,title_zh,service_categories(slug))&slug=eq.${encodeURIComponent(requestedProjectSlug)}&status=eq.published&deleted_at=is.null&limit=1`,config);
+        if (projects[0]) await hydrateProjectRecord(projects[0],requestedProjectSlug,config);
       }
     } catch (error) {
       console.warn('CMS unavailable; using the verified static website content.', error);
@@ -150,7 +169,8 @@
     const includes = (service.includes || []).map(item => `<li>${pick(item)}</li>`).join('');
     const price = pick(service.price || ['Contact for quotation','联系获取报价']);
     const turnaround = pick(service.turnaround || ['', '']);
-    return `<article class="content-card text-card service-detail-card"><div class="content-card-copy"><small>${number} / ${lang === 'zh' ? '专业设计服务' : 'PROFESSIONAL DESIGN SERVICE'}</small><h2>${pick(service.title)}</h2><p>${pick(service.description)}</p><div class="service-card-meta"><p><span>${lang === 'zh' ? '价格' : 'Price'}</span><strong>${price}</strong></p>${turnaround ? `<p><span>${lang === 'zh' ? '交付时间' : 'Turnaround'}</span><strong>${turnaround}</strong></p>` : ''}</div>${includes ? `<ul class="service-includes">${includes}</ul>` : ''}<div class="service-card-actions"><a class="card-action" href="${projectsUrl(service)}">${t('viewProject')} <span>→</span></a><a class="card-action secondary" href="${homeUrl}#contact">${t('start')} <span>↗</span></a></div></div></article>`;
+    const projectHref = service.projectUrl && service.projectUrl !== '#' ? service.projectUrl : `${categoryUrl(service.category)}?service=${encodeURIComponent(key)}#projects`;
+    return `<article class="content-card text-card service-detail-card"><div class="content-card-copy"><small>${number} / ${lang === 'zh' ? '专业设计服务' : 'PROFESSIONAL DESIGN SERVICE'}</small><h2>${pick(service.title)}</h2><p>${pick(service.description)}</p><div class="service-card-meta"><p><span>${lang === 'zh' ? '价格' : 'Price'}</span><strong>${price}</strong></p>${turnaround ? `<p><span>${lang === 'zh' ? '交付时间' : 'Turnaround'}</span><strong>${turnaround}</strong></p>` : ''}</div>${includes ? `<ul class="service-includes">${includes}</ul>` : ''}<div class="service-card-actions"><a class="card-action" href="${projectHref}">${t('viewProjects')} <span>→</span></a><a class="card-action secondary" href="${homeUrl}#contact">${t('start')} <span>↗</span></a></div></div></article>`;
   }
 
   function workPage() {
@@ -158,12 +178,45 @@
     return hero(t('work'), lang === 'zh' ? '探索品牌、营销与网站三大核心设计领域。' : 'Explore our three core disciplines, each built around clear thinking and distinctive execution.', trail, lang === 'zh' ? 'INFINITY / 作品' : 'INFINITY / WORK') + `<section class="content-section"><div class="card-grid">${Object.entries(data.categories).map(([key,value]) => categoryCard(key,value)).join('')}</div></section>`;
   }
 
+  function serviceCategoryPage(categoryKey) {
+    const category = data.categories[categoryKey];
+    if (!category) return notFound();
+    const trail = [{label:t('home'),url:homeUrl},{label:t('services'),url:homeUrl+'#services'},{label:pick(category.title)}];
+    const cards = category.services.map(key => serviceCard(key, serviceByKey(key))).join('');
+    return hero(pick(category.title), pick(category.intro), trail, lang === 'zh' ? 'INFINITY / 服务' : 'INFINITY / SERVICES') + `<section class="content-section" id="services-list"><div class="card-grid">${cards}</div></section>`;
+  }
+
+  function fallbackCategoryProjects(categoryKey) {
+    const category = data.categories[categoryKey];
+    return (category?.services || []).map(serviceKey => {
+      const service = serviceByKey(serviceKey), study = caseStudies[serviceKey];
+      if (!service || !study?.images?.[0]) return null;
+      return { slug:`${serviceKey}-showcase`, title_en:study.title[0], title_zh:study.title[1], short_description_en:study.overview[0], short_description_zh:study.overview[1], year:study.year||2026, cover:{public_url:study.images[0].src,width:study.images[0].width,height:study.images[0].height,alt_en:study.images[0].alt[0],alt_zh:study.images[0].alt[1]}, services:{slug:serviceKey,title_en:service.title[0],title_zh:service.title[1]} };
+    }).filter(Boolean);
+  }
+
+  function projectCard(project, index) {
+    const cover = project.cover;
+    const title = lang === 'zh' ? project.title_zh : project.title_en;
+    const description = lang === 'zh' ? project.short_description_zh : project.short_description_en;
+    const service = lang === 'zh' ? project.services?.title_zh : project.services?.title_en;
+    const src = cover?.public_url ? img(cover.public_url) : '';
+    return `<a class="project-grid-card project-reveal" style="--reveal-index:${index}" href="${projectDetailUrl(project.slug)}" aria-label="${t('viewProject')}: ${title}">${src ? `<figure><img src="${src}" width="${cover.width||1600}" height="${cover.height||1000}" alt="${lang === 'zh' ? cover.alt_zh||title : cover.alt_en||title}" ${index<2?'fetchpriority="high"':'loading="lazy"'} decoding="async"></figure>` : ''}<div><p class="inner-kicker">${service||''}</p><h2>${title}</h2><p>${description||''}</p><span class="card-action">${t('viewProject')} <span>→</span></span></div></a>`;
+  }
+
   function categoryPage(categoryKey) {
     const category = data.categories[categoryKey];
     if (!category) return notFound();
+    const selectedService = new URLSearchParams(location.search).get('service');
+    const source = categoryProjectsLoaded ? categoryProjects : fallbackCategoryProjects(categoryKey);
+    const projects = selectedService ? source.filter(project => project.services?.slug === selectedService) : source;
+    const service = selectedService ? serviceByKey(selectedService) : null;
+    const title = service ? pick(service.title) : pick(category.title);
+    const intro = service ? pick(service.description) : pick(category.intro);
     const trail = [{label:t('home'),url:homeUrl},{label:t('work'),url:root+'work/'},{label:pick(category.title)}];
-    const cards = category.services.map(key => serviceCard(key, serviceByKey(key))).join('');
-    return hero(pick(category.title), pick(category.intro), trail, lang === 'zh' ? 'INFINITY / 服务' : 'INFINITY / SERVICES') + `<section class="content-section"><div class="card-grid">${cards}</div></section>`;
+    const cards = projects.map(projectCard).join('');
+    const empty = `<div class="projects-empty"><h2>${lang === 'zh'?'作品即将上线。':'Projects coming soon.'}</h2><p>${lang === 'zh'?'我们最新的作品将会展示在这里。':'Our latest work will be added here.'}</p></div>`;
+    return hero(title, intro, trail, lang === 'zh' ? 'INFINITY / 作品' : 'INFINITY / WORK') + `<section class="content-section" id="projects"><div class="project-category-grid">${cards||empty}</div></section>`;
   }
 
   function studyLabels() {
@@ -186,10 +239,11 @@
     const colors = (study.colors || []).map(color => `<li><i style="--swatch:${color[0]}"></i><span>${color[lang === 'zh' ? 2 : 1]}</span><code>${color[0]}</code></li>`).join('');
     const typography = `<div class="study-type-sample"><span>Aa</span><div><strong>${lang === 'zh' ? '展示字体' : 'Display Typeface'}</strong><p>${pick(study.type)}</p></div></div><div class="study-type-sample"><span>Ag</span><div><strong>${lang === 'zh' ? '现代无衬线体' : 'Modern Sans Serif'}</strong><p>${lang === 'zh' ? '用于正文、说明与数字界面，确保各种尺寸下均清晰易读。' : 'Used for body copy, information and digital interfaces to remain clear at every size.'}</p></div></div>`;
     const gallery = study.images.slice(1).map((image, index) => `<figure class="study-gallery-item project-reveal" style="--reveal-index:${index};--media-ratio:${image.width} / ${image.height}"><div class="study-image-frame"><img src="${img(image.src)}" width="${image.width}" height="${image.height}" alt="${pick(image.alt)}" loading="lazy" decoding="async"></div><figcaption><span>${String(index + 2).padStart(2, '0')}</span>${pick(image.alt)}</figcaption></figure>`).join('');
-    const deliverables = study.deliverables.map((item, index) => `<li><span>${String(index + 1).padStart(2, '0')}</span>${pick(item)}</li>`).join('');
+    const deliverables = (study.deliverables || []).map((item, index) => `<li><span>${String(index + 1).padStart(2, '0')}</span>${pick(item)}</li>`).join('');
     const systemSection = colors || pick(study.type) ? `<section class="study-section study-system section"><div class="study-section-heading">${sectionMarker(labels.system, 3)}<h2>${labels.system}</h2></div><div class="study-system-grid">${colors ? `<article><h3>${labels.palette}</h3><ul class="study-palette">${colors}</ul></article>` : ''}${pick(study.type) ? `<article><h3>${labels.typography}</h3><div class="study-type">${typography}</div></article>` : ''}</div></section>` : '';
     return `<article class="case-study case-study-${study.layout}" style="--study-accent:${study.accent}">
-      <section class="study-section study-overview section"><div class="breadcrumbs">${trail.map((item,index) => index < trail.length - 1 ? `<a href="${item.url}">${item.label}</a><span>/</span>` : `<b>${item.label}</b>`).join('')}</div><div class="study-overview-grid"><div class="project-reveal">${sectionMarker(labels.overview, 1)}<h1>${pick(study.title)}</h1><p>${pick(study.overview)}</p></div><aside><dl><div><dt>${labels.service}</dt><dd>${pick(service.title)}</dd></div><div><dt>${labels.client}</dt><dd>${study.brand}</dd></div><div><dt>${labels.year}</dt><dd>2026</dd></div></dl><span>${labels.client}</span><p>${pick(study.client)}</p></aside></div></section>
+      <header class="project-compact-head section"><div class="breadcrumbs">${trail.map((item,index) => index < trail.length - 1 ? `<a href="${item.url}">${item.label}</a><span>/</span>` : `<b>${item.label}</b>`).join('')}</div><p class="inner-kicker">${pick(service.title)}</p><h1>${pick(study.title)}</h1></header>
+      <section class="study-section study-overview section"><div class="study-overview-grid"><div class="project-reveal">${sectionMarker(labels.overview, 1)}<h2>${labels.overview}</h2><p>${pick(study.overview)}</p></div><aside><dl><div><dt>${labels.service}</dt><dd>${pick(service.title)}</dd></div><div><dt>${labels.year}</dt><dd>${study.year||2026}</dd></div></dl></aside></div></section>
       <section class="study-section study-showcase section"><div class="study-section-heading">${sectionMarker(labels.gallery, 2)}<h2>${labels.gallery}</h2></div><figure class="study-cover project-reveal" style="--media-ratio:${heroImage.width} / ${heroImage.height}"><img src="${img(heroImage.src)}" width="${heroImage.width}" height="${heroImage.height}" alt="${pick(heroImage.alt)}" fetchpriority="high" decoding="async"><figcaption>${pick(heroImage.alt)} · ${labels.fictional}</figcaption></figure><div class="study-gallery">${gallery}</div></section>
       ${systemSection}
       ${deliverables ? `<section class="study-section study-deliverables section"><div class="study-section-heading">${sectionMarker(labels.deliverables, 4)}<h2>${labels.deliverables}</h2></div><ol>${deliverables}</ol><a class="btn btn-gold" href="${categoryUrl(service.category)}"><b class="button-label">${labels.back}</b><span>←</span></a></section>` : ''}
@@ -204,6 +258,20 @@
     const pageTitle = study ? pick(study.title) : `${pick(service.title)} ${t('projects')}`;
     const trail = [{label:t('home'),url:homeUrl},{label:t('work'),url:root+'work/'},{label:pick(category.title),url:categoryUrl(service.category)},{label:pageTitle}];
     return renderCaseStudy(serviceKey, service, trail);
+  }
+
+  function projectSlugPage() {
+    if (!requestedProjectSlug) return notFound();
+    const fallbackServiceKey = requestedProjectSlug.replace(/-showcase$/,'');
+    const serviceKey = dynamicProjectServiceKey || fallbackServiceKey;
+    const service = serviceByKey(serviceKey);
+    if (!service) return notFound();
+    if (!caseStudies[requestedProjectSlug] && caseStudies[fallbackServiceKey]) caseStudies = {...caseStudies,[requestedProjectSlug]:caseStudies[fallbackServiceKey]};
+    const study = caseStudies[requestedProjectSlug];
+    if (!study) return notFound();
+    const category = data.categories[service.category];
+    const trail = [{label:t('home'),url:homeUrl},{label:t('work'),url:root+'work/'},{label:pick(category.title),url:categoryUrl(service.category)},{label:pick(study.title)}];
+    return renderCaseStudy(requestedProjectSlug,service,trail);
   }
 
   function projectDetailPage(projectKey) {
@@ -266,8 +334,10 @@
     }
     let main = '';
     if (pageType === 'work') main = workPage();
+    else if (pageType === 'service-category') main = serviceCategoryPage(pageKey);
     else if (pageType === 'category') main = categoryPage(pageKey);
     else if (pageType === 'projects') main = projectsPage(pageKey);
+    else if (pageType === 'project-slug') main = projectSlugPage();
     else if (pageType === 'project-detail') main = projectDetailPage(pageKey);
     else if (pageType === 'case-study') main = caseStudyPage();
     else if (pageType === 'legal') main = legalPage(pageKey);

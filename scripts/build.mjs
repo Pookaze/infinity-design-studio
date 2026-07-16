@@ -7,7 +7,7 @@ const root = process.cwd();
 const out = join(root, 'dist');
 const excluded = new Set(['.git', '.github', '.agents', '.codex', '.vercel', 'dist', 'node_modules', 'scripts', 'supabase']);
 const rootFiles = new Set(['index.html', 'style.css', 'script.js', 'translations.js', 'translations-final.js', 'work-data.js', 'case-study-data.js', 'work-page.js', 'work.css', 'project.css', 'project.js', 'cms-site.js', 'cms-visual-schema.js', 'CMS-README.md', 'robots.txt', 'sitemap.xml']);
-const rootDirs = new Set(['assets', 'work', 'projects', 'project', 'privacy-policy', 'terms-of-service', 'admin']);
+const rootDirs = new Set(['assets', 'services', 'work', 'projects', 'project', 'privacy-policy', 'terms-of-service', 'admin']);
 
 await rm(out, { recursive: true, force: true });
 await mkdir(out, { recursive: true });

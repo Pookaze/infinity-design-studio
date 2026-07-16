@@ -12,7 +12,8 @@ createServer(async (req, res) => {
   try {
     const url = new URL(req.url || '/', 'http://localhost');
     const decoded = decodeURIComponent(url.pathname);
-    let path = normalize(join(root, decoded));
+    const dynamicProject = decoded.match(/^\/projects\/([^/]+)\/?$/);
+    let path = dynamicProject ? join(root, 'projects', 'index.html') : normalize(join(root, decoded));
     if (!path.startsWith(root)) throw new Error('Invalid path');
     try { if ((await stat(path)).isDirectory()) path = join(path, 'index.html'); } catch (_) {
       if (!extname(path)) path = join(path, 'index.html');
