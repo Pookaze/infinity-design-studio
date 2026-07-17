@@ -169,7 +169,7 @@
     const includes = (service.includes || []).map(item => `<li>${pick(item)}</li>`).join('');
     const price = pick(service.price || ['Contact for quotation','联系获取报价']);
     const turnaround = pick(service.turnaround || ['', '']);
-    return `<article class="content-card text-card service-detail-card"><div class="content-card-copy"><small>${number} / ${lang === 'zh' ? '专业设计服务' : 'PROFESSIONAL DESIGN SERVICE'}</small><h2>${pick(service.title)}</h2><p>${pick(service.description)}</p><div class="service-card-meta"><p><span>${lang === 'zh' ? '价格' : 'Price'}</span><strong>${price}</strong></p>${turnaround ? `<p><span>${lang === 'zh' ? '交付时间' : 'Turnaround'}</span><strong>${turnaround}</strong></p>` : ''}</div>${includes ? `<ul class="service-includes">${includes}</ul>` : ''}<div class="service-card-actions"><a class="card-action primary" href="${homeUrl}#contact">${t('start')} <span>↗</span></a></div></div></article>`;
+    return `<article class="content-card text-card service-detail-card"><div class="content-card-copy"><small>${number} / ${lang === 'zh' ? '专业设计服务' : 'PROFESSIONAL DESIGN SERVICE'}</small><h2>${pick(service.title)}</h2><p>${pick(service.description)}</p><div class="service-card-meta"><p><span>${lang === 'zh' ? '价格' : 'Price'}</span><strong>${price}</strong></p>${turnaround ? `<p><span>${lang === 'zh' ? '交付时间' : 'Turnaround'}</span><strong>${turnaround}</strong></p>` : ''}</div>${includes ? `<ul class="service-includes">${includes}</ul>` : ''}<div class="service-card-actions"><a class="card-action primary" href="${homeUrl}#contact">${lang === 'zh' ? '开始项目' : 'Start a Project'} <span>↗</span></a></div></div></article>`;
   }
 
   function workPage() {
