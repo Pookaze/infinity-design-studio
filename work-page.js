@@ -169,8 +169,7 @@
     const includes = (service.includes || []).map(item => `<li>${pick(item)}</li>`).join('');
     const price = pick(service.price || ['Contact for quotation','联系获取报价']);
     const turnaround = pick(service.turnaround || ['', '']);
-    const projectHref = service.projectUrl && service.projectUrl !== '#' ? service.projectUrl : `${categoryUrl(service.category)}?service=${encodeURIComponent(key)}#projects`;
-    return `<article class="content-card text-card service-detail-card"><div class="content-card-copy"><small>${number} / ${lang === 'zh' ? '专业设计服务' : 'PROFESSIONAL DESIGN SERVICE'}</small><h2>${pick(service.title)}</h2><p>${pick(service.description)}</p><div class="service-card-meta"><p><span>${lang === 'zh' ? '价格' : 'Price'}</span><strong>${price}</strong></p>${turnaround ? `<p><span>${lang === 'zh' ? '交付时间' : 'Turnaround'}</span><strong>${turnaround}</strong></p>` : ''}</div>${includes ? `<ul class="service-includes">${includes}</ul>` : ''}<div class="service-card-actions"><a class="card-action" href="${projectHref}">${t('viewProjects')} <span>→</span></a><a class="card-action secondary" href="${homeUrl}#contact">${t('start')} <span>↗</span></a></div></div></article>`;
+    return `<article class="content-card text-card service-detail-card"><div class="content-card-copy"><small>${number} / ${lang === 'zh' ? '专业设计服务' : 'PROFESSIONAL DESIGN SERVICE'}</small><h2>${pick(service.title)}</h2><p>${pick(service.description)}</p><div class="service-card-meta"><p><span>${lang === 'zh' ? '价格' : 'Price'}</span><strong>${price}</strong></p>${turnaround ? `<p><span>${lang === 'zh' ? '交付时间' : 'Turnaround'}</span><strong>${turnaround}</strong></p>` : ''}</div>${includes ? `<ul class="service-includes">${includes}</ul>` : ''}<div class="service-card-actions"><a class="card-action primary" href="${homeUrl}#contact">${t('start')} <span>↗</span></a></div></div></article>`;
   }
 
   function workPage() {
@@ -183,7 +182,7 @@
     if (!category) return notFound();
     const trail = [{label:t('home'),url:homeUrl},{label:t('services'),url:homeUrl+'#services'},{label:pick(category.title)}];
     const cards = category.services.map(key => serviceCard(key, serviceByKey(key))).join('');
-    return hero(pick(category.title), pick(category.intro), trail, lang === 'zh' ? 'INFINITY / 服务' : 'INFINITY / SERVICES') + `<section class="content-section" id="services-list"><div class="card-grid">${cards}</div></section>`;
+    return hero(pick(category.title), pick(category.intro), trail, lang === 'zh' ? 'INFINITY / 服务' : 'INFINITY / SERVICES') + `<section class="content-section" id="services-list"><div class="card-grid service-card-grid">${cards}</div></section>`;
   }
 
   function fallbackCategoryProjects(categoryKey) {
