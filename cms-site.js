@@ -48,7 +48,7 @@
   function applySection(section,lang) {
     const element=sectionElement(section);if(!element)return;element.hidden=!section.is_visible;
     const sectionContent=section.content||section[`content_${lang}`]||{},fields=sectionContent.fields;
-    if(fields&&typeof fields==='object')Object.entries(fields).forEach(([key,value])=>{const target=element.querySelector(`[data-cms-field="${CSS.escape(key)}"]`);if(!target)return;const attribute=target.dataset.cmsAttr;if(attribute==='href')target.setAttribute('href',safeLink(value));else if(attribute==='src')target.setAttribute('src',String(value||''));else target.textContent=displayText(value,lang)});
+    if(fields&&typeof fields==='object')Object.entries(fields).forEach(([key,value])=>{const target=element.querySelector(`[data-cms-field="${CSS.escape(key)}"]`);if(!target)return;const attribute=target.dataset.cmsAttr;if(attribute==='href')target.setAttribute('href',safeLink(value));else if(attribute==='src')target.setAttribute('src',String(value||''));else target.textContent=key==='whatsappText'?displayText(value,lang).replace(/\s*[↗→]+$/u,''):displayText(value,lang)});
     else {
       const heading=element.querySelector('h1,h2,h3'),paragraph=element.querySelector('p'),title=section[`title_${lang}`],body=sectionContent.text;
       if(heading&&title)heading.textContent=displayText(title,lang);if(paragraph&&body)paragraph.textContent=displayText(body,lang);

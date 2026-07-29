@@ -33,7 +33,7 @@
     ]},
     { key: 'contact', label: 'Contact', description: 'Project enquiry introduction and WhatsApp action.', icon: '05', fields: [
       field('kicker', 'Section label', 'Contact', '联系'), field('titleLine1', 'Title — first line', 'Ready to start', '准备开始'), field('titleLine2', 'Title — second line', 'your next ', '您的下一个'), field('titleAccent', 'Highlighted title', 'project?', '项目吗？'), field('description', 'Introduction', 'Tell us what you need and we will reply with the next steps.', '告诉我们您的需求，我们会回复后续步骤。', 'textarea'),
-      field('whatsappText', 'WhatsApp button text', 'Chat on WhatsApp ↗', 'WhatsApp 联系 ↗'), field('whatsappLink', 'WhatsApp link', '#', '#', 'url'), field('submitText', 'Form submit button', 'Send Inquiry', '提交咨询')
+      field('whatsappText', 'WhatsApp button text', 'Chat on WhatsApp', 'WhatsApp 联系'), field('whatsappLink', 'WhatsApp link', '#', '#', 'url'), field('submitText', 'Form submit button', 'Send Inquiry', '提交咨询')
     ]}
   ]);
 })();

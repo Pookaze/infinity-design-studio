@@ -108,7 +108,7 @@ navLinks.forEach(link => link.addEventListener('click', () => {
 
 document.querySelectorAll('a[href^="#"]').forEach(link => link.addEventListener('click', event => {
   const selector = link.getAttribute('href');
-  if (!selector || selector === '#') return;
+  if (!selector?.startsWith('#') || selector === '#') return;
   const target = document.querySelector(selector);
   if (!target) return;
   event.preventDefault();
