@@ -156,18 +156,27 @@ window.addEventListener('pointermove', event => {
 }, { passive: true });
 
 const contactForm = document.querySelector('#contactForm');
+const budgetAmountField = contactForm.querySelector('[data-budget-amount]');
+budgetAmountField.addEventListener('keydown', event => {
+  if (event.key === '-' || event.key === '+') event.preventDefault();
+});
+budgetAmountField.addEventListener('input', () => {
+  if (budgetAmountField.value !== '' && Number(budgetAmountField.value) < 0) budgetAmountField.value = '0';
+});
 contactForm.querySelectorAll('input, select, textarea').forEach(field => {
   field.addEventListener('input', () => {
     field.classList.remove('invalid');
     field.removeAttribute('aria-invalid');
   });
 });
-contactForm.addEventListener('submit', event => {
+let inquirySubmissionId = null;
+contactForm.addEventListener('submit', async event => {
   event.preventDefault();
-  const status = event.currentTarget.querySelector('.form-status');
-  const submit = event.currentTarget.querySelector('[type="submit"]');
-  const requiredFields = [...event.currentTarget.querySelectorAll('[required]')];
-  const contactField = event.currentTarget.querySelector('[data-contact]');
+  const form = event.currentTarget;
+  const status = form.querySelector('.form-status');
+  const submit = form.querySelector('[type="submit"]');
+  const requiredFields = [...form.querySelectorAll('[required]')];
+  const contactField = form.querySelector('[data-contact]');
   const contactValue = contactField?.value.trim() || '';
   const contactValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(contactValue) || /^\+?[\d\s()\-]{8,20}$/.test(contactValue);
   const invalidFields = requiredFields.filter(field => !field.checkValidity() || (field === contactField && !contactValid));
@@ -184,9 +193,31 @@ contactForm.addEventListener('submit', event => {
   }
   if (submit.disabled) return;
   submit.disabled = true;
-  status.className = 'form-status success';
-  status.textContent = translateValue('Thank you. Your inquiry details are ready.');
-  event.currentTarget.reset();
-  window.setTimeout(() => { submit.disabled = false; }, 1500);
+  const submitLabel = submit.querySelector('.button-label');
+  const idleLabel = submitLabel.textContent;
+  submitLabel.textContent = translateValue('Sending...');
+  status.className = 'form-status';
+  status.textContent = '';
+  inquirySubmissionId ||= crypto.randomUUID();
+  try {
+    const fields = Object.fromEntries(new FormData(form));
+    const response = await fetch('/api/inquiries', {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({...fields,submissionId:inquirySubmissionId})
+    });
+    const result = await response.json().catch(() => ({}));
+    if (!response.ok) throw new Error(result.error || 'Unable to send your inquiry right now. Please try again.');
+    status.className = 'form-status success';
+    status.textContent = translateValue('Thank you. Your inquiry has been sent.');
+    form.reset();
+    inquirySubmissionId = null;
+  } catch (error) {
+    status.className = 'form-status error';
+    status.textContent = translateValue(error.message || 'Unable to send your inquiry right now. Please try again.');
+  } finally {
+    submit.disabled = false;
+    submitLabel.textContent = idleLabel;
+  }
 });
 

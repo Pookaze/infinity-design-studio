@@ -22,4 +22,14 @@
   Object.assign(window.siteTranslations.placeholders.zh, {
     'Your name':'您的姓名', 'you@example.com or +60…':'您的邮箱或 WhatsApp 号码', 'What would you like to create?':'请描述您想要创建的项目。'
   });
+  Object.assign(window.siteTranslations.zh, {
+    'Currency':'货币',
+    'Budget Amount':'预算金额',
+    'Sending...':'发送中...',
+    'Thank you. Your inquiry has been sent.':'谢谢，您的咨询已发送。',
+    'Unable to send your inquiry right now. Please try again.':'暂时无法发送您的咨询，请重试。'
+  });
+  Object.assign(window.siteTranslations.placeholders.zh, {
+    'Enter your budget':'输入您的预算'
+  });
 })();
